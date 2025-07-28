@@ -10,6 +10,13 @@ export interface IAppConfig {
     port: number;
     password?: string;
   };
+  postgres: {
+    host: string;
+    port: number;
+    username?: string;
+    password?: string;
+    database?: string;
+  };
   jwt: {
     secret: string;
     expiresIn: string;
@@ -30,6 +37,13 @@ export default (): IAppConfig => {
       host: env.REDIS_HOST,
       port: env.REDIS_PORT,
       password: env.REDIS_PASSWORD,
+    },
+    postgres: {
+      host: env.DB_HOST,
+      port: env.DB_PORT,
+      username: env.DB_USERNAME,
+      password: env.DB_PASSWORD,
+      database: env.DB_DATABASE,
     },
     jwt: {
       secret: env.JWT_SECRET,
