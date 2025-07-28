@@ -5,6 +5,7 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { ConfigModule } from '@nestjs/config';
 import configuration from './config/configuration';
 import { EnvConfigModule } from './config/config.module';
+import { DatabaseModule } from './core/database/database.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { EnvConfigModule } from './config/config.module';
       envFilePath: `.env.${process.env.NODE_ENV}`,
       load: [configuration],
     }),
+    DatabaseModule,
   ],
 
   controllers: [AppController],

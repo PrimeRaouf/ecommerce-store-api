@@ -22,6 +22,10 @@ export class EnvConfigService {
     return this.get('redis');
   }
 
+  get postgres() {
+    return this.get('postgres');
+  }
+
   get jwt() {
     return this.get('jwt');
   }
