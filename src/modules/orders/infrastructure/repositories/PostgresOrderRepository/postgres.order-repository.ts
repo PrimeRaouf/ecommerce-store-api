@@ -1,5 +1,5 @@
 // src/order/infrastructure/postgres-order.repository.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order } from '../../../domain/entities/order';
@@ -19,6 +19,21 @@ export class PostgresOrderRepository implements OrderRepository {
       totalPrice: order.totalPrice,
     });
     await this.ormRepo.save(entity);
+  }
+
+  async update(order: Order): Promise<void> {
+    // Ensure the order exists first
+    const existing = await this.ormRepo.findOne({ where: { id: order.id } });
+    if (!existing) {
+      throw new NotFoundException(`Order with ID ${order.id} not found`);
+    }
+
+    // Merge new values into the existing entity
+    const updated = this.ormRepo.merge(existing, {
+      totalPrice: order.totalPrice,
+    });
+
+    await this.ormRepo.save(updated);
   }
 
   async findById(id: number): Promise<Order | null> {
