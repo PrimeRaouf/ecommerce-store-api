@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { OrdersController } from './orders.controller';
 import { GetOrderController } from './presentation/controllers/getOrder.controller';
-import { GetOrderUseCase } from './application/use-cases/getOrder.usecase';
+import { GetOrderUseCase } from './application/use-cases/GetOrder/getOrder.usecase';
 
 import { OrderRepository } from './domain/repositories/order-repository';
 import {
