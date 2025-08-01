@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { OrdersController } from './orders.controller';
-import { GetOrderController } from './presentation/controllers/getOrder.controller';
+import { GetOrderController } from './presentation/controllers/GetOrder/getOrder.controller';
 import { GetOrderUseCase } from './application/use-cases/GetOrder/getOrder.usecase';
 
 import { OrderRepository } from './domain/repositories/order-repository';
