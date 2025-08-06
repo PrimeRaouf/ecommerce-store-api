@@ -11,12 +11,14 @@ import {
   REDIS_ORDER_REPOSITORY,
 } from './order.token';
 
-import { RedisOrderRepository } from './infrastructure/repositories/redis.order-repository';
+import { RedisOrderRepository } from './infrastructure/repositories/RedisOrderRepository/redis.order-repository';
 import { PostgresOrderRepository } from './infrastructure/repositories/PostgresOrderRepository/postgres.order-repository';
 import { OrderEntity } from './infrastructure/orm/order.schema';
+import { CacheService } from '../../core/infrastructure/redis/cache.service';
+import { RedisModule } from '../../core/infrastructure/redis/redis.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([OrderEntity])],
+  imports: [TypeOrmModule.forFeature([OrderEntity]), RedisModule],
 
   controllers: [OrdersController],
 
@@ -30,10 +32,13 @@ import { OrderEntity } from './infrastructure/orm/order.schema';
     // Redis Repo (decorator around Postgres)
     {
       provide: REDIS_ORDER_REPOSITORY,
-      useFactory: (pgRepo: PostgresOrderRepository) => {
-        return new RedisOrderRepository(pgRepo);
+      useFactory: (
+        cacheService: CacheService,
+        postgresRepo: PostgresOrderRepository,
+      ) => {
+        return new RedisOrderRepository(cacheService, postgresRepo);
       },
-      inject: [POSTGRES_ORDER_REPOSITORY],
+      inject: [CacheService, POSTGRES_ORDER_REPOSITORY],
     },
 
     // Default Repository Binding
