@@ -1,4 +1,3 @@
-# bitbucket-pipelines.yml
 image: node:22
 
 options:
@@ -6,20 +5,35 @@ options:
   size: 2x
 
 pipelines:
-  default:
-    - step:
-        name: Install, Lint & Test
-        caches:
-          - node
-        script:
-          - echo "🛠 Installing dependencies..."
-          - npm ci --legacy-peer-deps
-          - echo "🔍 Linting..."
-          - npm run lint
-          - echo "🧪 Running tests..."
-          - npm run test:ci
-        artifacts:
-          - coverage/**
+  branches:
+    fix/test-pipelines: # Runs only on your testing branch
+      - step:
+          name: Install, Lint & Test
+          caches:
+            - node
+          script:
+            - echo "🛠 Installing dependencies (legacy peer deps to avoid conflicts)..."
+            - npm ci --legacy-peer-deps
+            - echo "🔍 Linting..."
+            - npm run lint
+            - echo "🧪 Running tests..."
+            - npm run test:ci
+          artifacts:
+            - coverage/**
+    main:
+      - step:
+          name: Install, Lint & Test (Production)
+          caches:
+            - node
+          script:
+            - echo "🛠 Installing dependencies..."
+            - npm ci --legacy-peer-deps
+            - echo "🔍 Linting..."
+            - npm run lint
+            - echo "🧪 Running tests..."
+            - npm run test:ci
+          artifacts:
+            - coverage/**
 definitions:
   caches:
     node: ~/.npm
