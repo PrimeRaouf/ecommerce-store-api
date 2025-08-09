@@ -1,17 +1,25 @@
 import { Injectable } from '@nestjs/common';
-import { RedisService } from '../redis/redis.service';
 import { FtSearchOptions } from 'redis';
+import { RedisJsonClient } from '../commands/redis-json.client';
+import { RedisKeyClient } from '../commands/redis-key.client';
+import { RedisSearchClient } from '../commands/redis-search.client';
+import { RedisService } from '../redis.service';
 
 @Injectable()
 export class CacheService {
-  constructor(private readonly redisService: RedisService) {}
+  constructor(
+    private readonly jsonCmd: RedisJsonClient,
+    private readonly keyCmd: RedisKeyClient,
+    private readonly searchCmd: RedisSearchClient,
+    private readonly redisService: RedisService,
+  ) {}
 
   async ttl(key: string): Promise<number> {
-    return this.redisService.ttl(key);
+    return this.keyCmd.ttl(key);
   }
 
   async get<T>(key: string, path?: string): Promise<T | null> {
-    const value = await this.redisService.jsonGet(key, path);
+    const value = await this.jsonCmd.get(key, path);
     return value as unknown as T;
   }
 
@@ -20,7 +28,7 @@ export class CacheService {
     query: string = '*',
     options?: FtSearchOptions,
   ): Promise<T[]> {
-    const values = await this.redisService.search(index, query, options);
+    const values = await this.searchCmd.search(index, query, options);
     return values.documents.map((doc: any) => doc.value as T);
   }
 
@@ -29,15 +37,15 @@ export class CacheService {
     value: T,
     { path = '$', ttl = 3600 }: { path?: string; ttl?: number } = {},
   ): Promise<void> {
-    await this.redisService.jsonSet(key, path, value as any);
-    await this.redisService.expire(key, ttl);
+    await this.jsonCmd.set(key, path, value as any);
+    await this.keyCmd.expire(key, ttl);
   }
 
   async setAll(
     entries: { key: string; value: any }[],
     { path = '$', ttl = 3600 }: { path?: string; ttl?: number } = {},
   ): Promise<void> {
-    const pipeline = this.redisService.createPipeline();
+    const pipeline = this.keyCmd.createPipeline();
 
     for (const { key, value } of entries) {
       const fullKey = this.redisService.getFullKey(key);
@@ -55,9 +63,9 @@ export class CacheService {
     partial: Partial<T>,
     { path = '$', ttl = 3600 }: { path?: string; ttl?: number } = {},
   ): Promise<T | null> {
-    await this.redisService.jsonMerge(key, path, partial as any);
+    await this.jsonCmd.merge(key, path, partial as any);
     if (ttl) {
-      await this.redisService.expire(key, ttl);
+      await this.keyCmd.expire(key, ttl);
     }
     return this.get<T>(key);
   }
@@ -66,7 +74,7 @@ export class CacheService {
     entries: { key: string; value: any }[],
     { path = '$', ttl = 3600 }: { path?: string; ttl?: number } = {},
   ): Promise<void> {
-    const pipeline = this.redisService.createPipeline();
+    const pipeline = this.keyCmd.createPipeline();
 
     for (const { key, value } of entries) {
       const fullKey = this.redisService.getFullKey(key);
@@ -80,7 +88,7 @@ export class CacheService {
   }
 
   async delete(key: string): Promise<void> {
-    await this.redisService.jsonDel(key);
+    await this.jsonCmd.del(key);
   }
 
   async search<T>(
@@ -88,11 +96,11 @@ export class CacheService {
     query: string,
     options?: FtSearchOptions,
   ): Promise<T[]> {
-    const result = await this.redisService.search(index, query, options);
+    const result = await this.searchCmd.search(index, query, options);
     return result.documents.map((doc: any) => doc.value as T);
   }
 
   async scanKeys(pattern: string, count = 100): Promise<string[]> {
-    return this.redisService.scanKeys(pattern, count);
+    return this.keyCmd.scanKeys(pattern, count);
   }
 }

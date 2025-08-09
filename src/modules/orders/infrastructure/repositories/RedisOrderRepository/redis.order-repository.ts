@@ -4,7 +4,7 @@ import { Order } from '../../../domain/entities/order';
 import { OrderRepository } from '../../../domain/repositories/order-repository';
 import { RepositoryError } from '../../../../../core/errors/repository.error';
 import { Result } from '../../../../../core/domain/result';
-import { CacheService } from '../../../../../core/infrastructure/redis/cache.service';
+import { CacheService } from '../../../../../core/infrastructure/redis/cache/cache.service';
 import { ErrorFactory } from '../../../../../core/errors/error.factory';
 import { Order_REDIS } from '../../../../../core/infrastructure/redis/constants/redis.constants';
 
