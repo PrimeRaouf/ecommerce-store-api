@@ -17,6 +17,8 @@ import { CreateProductUseCase } from './application/usecases/CreateProduct/creat
 import { CreateProductController } from './presentation/controllers/CreateProduct/create-product.controller';
 import { DeleteProductController } from './presentation/controllers/DeleteProduct/delete-product.controller';
 import { DeleteProductUseCase } from './application/usecases/DeleteProduct/delete-product.usecase';
+import { ListProductsController } from './presentation/controllers/ListProducts/list-products.controller';
+import { ListProductsUseCase } from './application/usecases/ListProducts/list-products.usecase';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ProductEntity]), RedisModule],
@@ -51,11 +53,13 @@ import { DeleteProductUseCase } from './application/usecases/DeleteProduct/delet
     CreateProductUseCase,
     GetProductUseCase,
     DeleteProductUseCase,
+    ListProductsUseCase,
 
     // Controllers
     CreateProductController,
     GetProductController,
     DeleteProductController,
+    ListProductsController,
   ],
 })
 export class ProductsModule {}
