@@ -10,14 +10,18 @@ import {
 import { CreateProductDto } from './presentation/dto/create-product.dto';
 import { UpdateProductDto } from './presentation/dto/update-product.dto';
 import { GetProductController } from './presentation/controllers/GetProduct/get-product.controller';
+import { CreateProductController } from './presentation/controllers/CreateProduct/create-product.controller';
 
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly getProductController: GetProductController) {}
+  constructor(
+    private readonly getProductController: GetProductController,
+    private readonly createProductController: CreateProductController,
+  ) {}
 
   @Post()
-  create(@Body() createProductDto: CreateProductDto) {
-    // return this.handle.create(createProductDto);
+  async createProduct(@Body() dto: CreateProductDto) {
+    return this.createProductController.handle(dto);
   }
 
   @Get()
