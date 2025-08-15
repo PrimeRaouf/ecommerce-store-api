@@ -13,6 +13,8 @@ import { PostgresProductRepository } from './infrastructure/repositories/Postgre
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RedisModule } from '../../core/infrastructure/redis/redis.module';
 import { ProductEntity } from './infrastructure/orm/product.schema';
+import { CreateProductUseCase } from './application/usecases/CreateProduct/create-product.usecase';
+import { CreateProductController } from './presentation/controllers/CreateProduct/create-product.controller';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ProductEntity]), RedisModule],
@@ -43,7 +45,12 @@ import { ProductEntity } from './infrastructure/orm/product.schema';
       useExisting: REDIS_PRODUCT_REPOSITORY,
     },
 
+    // Usecases
+    CreateProductUseCase,
     GetProductUseCase,
+
+    // Controllers
+    CreateProductController,
     GetProductController,
   ],
 })

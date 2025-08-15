@@ -7,22 +7,26 @@ import { ProductRepository } from '../../../domain/repositories/product-reposito
 import { ProductEntity } from '../../orm/product.schema';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ErrorFactory } from '../../../../../core/errors/error.factory';
+import { CreateProductDto } from '../../../presentation/dto/create-product.dto';
 
 export class PostgresProductRepository implements ProductRepository {
   constructor(
     @InjectRepository(ProductEntity)
     private readonly ormRepo: Repository<ProductEntity>,
   ) {}
-  async save(product: Product): Promise<Result<void, RepositoryError>> {
+  async save(
+    createProductDto: CreateProductDto,
+  ): Promise<Result<Product, RepositoryError>> {
     try {
-      const entity = this.ormRepo.create(product);
+      const entity = this.ormRepo.create(createProductDto);
       await this.ormRepo.save(entity);
 
-      return Result.success<void>(undefined);
+      return Result.success<Product>(entity);
     } catch (error) {
       return ErrorFactory.RepositoryError(`Failed to save the product`, error);
     }
   }
+
   async update(product: Product): Promise<Result<void, RepositoryError>> {
     try {
       // Ensure the product exists first

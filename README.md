@@ -174,7 +174,3 @@ docker-compose.yaml
 
 Built by **PrimeRaouf**  
 GitHub: [https://github.com/PrimeRaouf/ecommerce-store-api](https://github.com/PrimeRaouf/ecommerce-store-api)
-
-```
-
-```

@@ -13,6 +13,7 @@ import { GetProductUseCase } from '../../../application/usecases/GetProduct/get-
 describe('GetProductController', () => {
   let controller: GetProductController;
   let mockGetProductUseCase: jest.Mocked<GetProductUseCase>;
+  let expectedProduct: Product;
 
   beforeEach(() => {
     // Mock the GetProductUseCase
@@ -26,7 +27,7 @@ describe('GetProductController', () => {
   describe('handle', () => {
     it('should return success if Product if found', async () => {
       const productId = 1;
-      const expectedProduct = new Product({
+      expectedProduct = new Product({
         id: productId,
         name: 'Car',
         description: 'A fast red sports car',

@@ -10,12 +10,14 @@ import { RepositoryError } from '../../../../../core/errors/repository.error';
 import { Product_REDIS } from '../../../../../core/infrastructure/redis/constants/redis.constants';
 import { Product } from '../../../domain/entities/product';
 import { RedisProductRepository } from './redis.product-repository';
+import { CreateProductDto } from '../../../presentation/dto/create-product.dto';
 
 describe('RedisProductRepository', () => {
   let repo: RedisProductRepository;
   let cacheService: jest.Mocked<CacheService>;
   let postgresRepo: jest.Mocked<ProductRepository>;
   let product: Product;
+  let createProductDto: CreateProductDto;
 
   beforeEach(() => {
     cacheService = {
@@ -34,17 +36,36 @@ describe('RedisProductRepository', () => {
 
     repo = new RedisProductRepository(cacheService, postgresRepo);
 
-    product = { id: 1, name: 'Test Product' } as unknown as Product;
+    product = {
+      id: 1,
+      name: 'car',
+      description: 'A fast red sports car',
+      price: 35000,
+      sku: 'CAR-001',
+      stockQuantity: 10,
+      createdAt: new Date('2025-01-01T10:00:00Z'),
+      updatedAt: new Date('2025-08-13T15:00:00Z'),
+    } as Product;
+
+    createProductDto = {
+      name: 'car',
+      description: 'A fast red sports car',
+      price: 35000,
+      sku: 'CAR-001',
+      stockQuantity: 10,
+      createdAt: new Date('2025-01-01T10:00:00Z'),
+      updatedAt: new Date('2025-08-13T15:00:00Z'),
+    } as CreateProductDto;
   });
 
   describe('save', () => {
     it('should save to postgres and cache', async () => {
-      postgresRepo.save.mockResolvedValue(Result.success(undefined));
+      postgresRepo.save.mockResolvedValue(Result.success(product));
       cacheService.set.mockResolvedValue(undefined);
 
-      const result = await repo.save(product);
+      const result = await repo.save(createProductDto);
 
-      expect(postgresRepo.save).toHaveBeenCalledWith(product);
+      expect(postgresRepo.save).toHaveBeenCalledWith(createProductDto);
       expect(cacheService.set).toHaveBeenCalledWith(
         `${Product_REDIS.CACHE_KEY}${product.id}`,
         product,
@@ -57,17 +78,17 @@ describe('RedisProductRepository', () => {
       const fail = Result.failure<RepositoryError>(new RepositoryError('fail'));
       postgresRepo.save.mockResolvedValue(fail);
 
-      const result = await repo.save(product);
+      const result = await repo.save(createProductDto);
 
       expect(cacheService.set).not.toHaveBeenCalled();
       expect(isFailure(result)).toBe(true);
     });
 
     it('should return failure if cache throws', async () => {
-      postgresRepo.save.mockResolvedValue(Result.success(undefined));
+      postgresRepo.save.mockResolvedValue(Result.success(product));
       cacheService.set.mockRejectedValue(new Error('cache error'));
 
-      const result = await repo.save(product);
+      const result = await repo.save(createProductDto);
 
       expect(isFailure(result)).toBe(true);
     });

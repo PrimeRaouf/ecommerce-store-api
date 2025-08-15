@@ -7,6 +7,7 @@ import { Product } from '../../../domain/entities/product';
 import { isFailure, isSuccess } from '../../../../../core/domain/result';
 import { RepositoryError } from '../../../../../core/errors/repository.error';
 import { PostgresProductRepository } from './postgres.product-repository';
+import { CreateProductDto } from '../../../presentation/dto/create-product.dto';
 
 // Mock repository for dependency injection
 const mockTypeOrmRepository = {
@@ -39,6 +40,17 @@ const productEntity = {
   createdAt: new Date('2025-01-01T10:00:00Z'),
   updatedAt: new Date('2025-08-13T15:00:00Z'),
 } as ProductEntity;
+
+const createProductDto = {
+  name: 'car',
+  description: 'A fast red sports car',
+  price: 35000,
+  sku: 'CAR-001',
+  stockQuantity: 10,
+  createdAt: new Date('2025-01-01T10:00:00Z'),
+  updatedAt: new Date('2025-08-13T15:00:00Z'),
+} as CreateProductDto;
+
 const dbError = new Error('DB Error');
 
 describe('PostgresProductRepository', () => {
@@ -70,21 +82,21 @@ describe('PostgresProductRepository', () => {
       mockTypeOrmRepository.create.mockReturnValue(productEntity);
       mockTypeOrmRepository.save.mockResolvedValue(productEntity);
 
-      const result = await repository.save(productDomain);
+      const result = await repository.save(createProductDto);
 
       expect(isSuccess(result)).toBe(true);
       // More specific check for void success
       if (isSuccess(result)) {
-        expect(result.value).toBeUndefined();
+        expect(result.value).toBe(productEntity);
       }
-      expect(ormRepo.create).toHaveBeenCalledWith(productDomain);
+      expect(ormRepo.create).toHaveBeenCalledWith(createProductDto);
       expect(ormRepo.save).toHaveBeenCalledWith(productEntity);
     });
 
     it('should return a failure if the database throws an error', async () => {
       mockTypeOrmRepository.save.mockRejectedValue(dbError);
 
-      const result = await repository.save(productDomain);
+      const result = await repository.save(createProductDto);
 
       expect(isFailure(result)).toBe(true);
       if (isFailure(result)) {

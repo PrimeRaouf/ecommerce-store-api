@@ -6,18 +6,22 @@ import { CacheService } from '../../../../../core/infrastructure/redis/cache/cac
 import { Product_REDIS } from '../../../../../core/infrastructure/redis/constants/redis.constants';
 import { Product } from '../../../domain/entities/product';
 import { ProductRepository } from '../../../domain/repositories/product-repository';
+import { CreateProductDto } from '../../../presentation/dto/create-product.dto';
 
 export class RedisProductRepository implements ProductRepository {
   constructor(
     private readonly cacheService: CacheService,
     private readonly postgresRepo: ProductRepository,
   ) {}
-  async save(product: Product): Promise<Result<void, RepositoryError>> {
+  async save(
+    createProductDto: CreateProductDto,
+  ): Promise<Result<Product, RepositoryError>> {
     try {
       // Save to Postgres first
-      const saveResult = await this.postgresRepo.save(product);
+      const saveResult = await this.postgresRepo.save(createProductDto);
       if (saveResult.isFailure) return saveResult;
 
+      const product = saveResult.value;
       // Cache it
       await this.cacheService.set(
         `${Product_REDIS.CACHE_KEY}${product.id}`,
@@ -25,11 +29,12 @@ export class RedisProductRepository implements ProductRepository {
         { ttl: Product_REDIS.EXPIRATION },
       );
 
-      return Result.success<void>(undefined);
+      return Result.success<Product>(product);
     } catch (error) {
-      return ErrorFactory.RepositoryError(`Failed to save order`, error);
+      return ErrorFactory.RepositoryError(`Failed to save product`, error);
     }
   }
+
   async update(product: Product): Promise<Result<void, RepositoryError>> {
     try {
       // Update in Postgres
@@ -45,7 +50,7 @@ export class RedisProductRepository implements ProductRepository {
 
       return Result.success<void>(undefined);
     } catch (error) {
-      return ErrorFactory.RepositoryError(`Failed to update order`, error);
+      return ErrorFactory.RepositoryError(`Failed to update product`, error);
     }
   }
   async findById(id: number): Promise<Result<Product, RepositoryError>> {
@@ -71,7 +76,7 @@ export class RedisProductRepository implements ProductRepository {
 
       return dbResult;
     } catch (error) {
-      return ErrorFactory.RepositoryError(`Failed to find order`, error);
+      return ErrorFactory.RepositoryError(`Failed to find product`, error);
     }
   }
   async findAll(): Promise<Result<Product[], RepositoryError>> {
@@ -80,12 +85,12 @@ export class RedisProductRepository implements ProductRepository {
       const dbResult = await this.postgresRepo.findAll();
       if (dbResult.isFailure) return dbResult;
 
-      // Optionally cache each order
+      // Optionally cache each product
       await Promise.all(
-        dbResult.value.map((order) =>
+        dbResult.value.map((product) =>
           this.cacheService.set(
-            `${Product_REDIS.CACHE_KEY}${order.id}`,
-            order,
+            `${Product_REDIS.CACHE_KEY}${product.id}`,
+            product,
             {
               ttl: Product_REDIS.EXPIRATION,
             },
@@ -95,7 +100,7 @@ export class RedisProductRepository implements ProductRepository {
 
       return dbResult;
     } catch (error) {
-      return ErrorFactory.RepositoryError(`Failed to find all orders`, error);
+      return ErrorFactory.RepositoryError(`Failed to find all products`, error);
     }
   }
   async deleteById(id: number): Promise<Result<void, RepositoryError>> {
@@ -109,7 +114,7 @@ export class RedisProductRepository implements ProductRepository {
 
       return Result.success<void>(undefined);
     } catch (error) {
-      return ErrorFactory.RepositoryError(`Failed to delete order`, error);
+      return ErrorFactory.RepositoryError(`Failed to delete product`, error);
     }
   }
 }
