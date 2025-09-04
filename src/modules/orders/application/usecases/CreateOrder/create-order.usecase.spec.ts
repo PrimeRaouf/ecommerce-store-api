@@ -1,4 +1,4 @@
-// src/modules/Orders/application/usecases/GetOrder/get-Order.usecase.spec.ts
+// src/modules/Orders/application/usecases/CreateOrder/create-order.usecase.spec.ts
 import { OrderRepository } from '../../../domain/repositories/order-repository';
 import {
   Result,
@@ -11,10 +11,12 @@ import { CreateOrderUseCase } from './create-order.usecase';
 import { CreateOrderDto } from '../../../presentation/dto/create-order.dto';
 import { IOrder } from '../../../domain/interfaces/IOrder';
 import { OrderStatus } from '../../../domain/value-objects/order-status';
+import { OrderFactory } from '../../../domain/factories/order.factory';
 
 describe('CreateOrderUseCase', () => {
   let useCase: CreateOrderUseCase;
   let mockOrderRepository: jest.Mocked<OrderRepository>;
+  let orderFactory: OrderFactory;
   let mockOrder: IOrder;
   let mockCreateOrderDto: CreateOrderDto;
 
@@ -26,8 +28,9 @@ describe('CreateOrderUseCase', () => {
       findAll: jest.fn(),
       deleteById: jest.fn(),
     };
+    orderFactory = new OrderFactory();
 
-    useCase = new CreateOrderUseCase(mockOrderRepository);
+    useCase = new CreateOrderUseCase(orderFactory, mockOrderRepository);
 
     mockOrder = {
       id: '123e4567-e89b-12d3-a456-426614174000',
@@ -60,8 +63,8 @@ describe('CreateOrderUseCase', () => {
         },
       ],
       status: OrderStatus.PENDING,
-    };
-  }) as CreateOrderDto;
+    } as CreateOrderDto;
+  });
 
   describe('execute', () => {
     it('should return Success if order is created', async () => {
@@ -73,7 +76,10 @@ describe('CreateOrderUseCase', () => {
       if (isSuccess(result)) {
         expect(result.value).toBe(mockOrder);
       }
-      expect(mockOrderRepository.save).toHaveBeenCalledWith(mockCreateOrderDto);
+
+      // Factory will aggregate and add totalPrice; assert repository called with aggregated DTO
+      const aggregatedDto = orderFactory.createFromDto(mockCreateOrderDto);
+      expect(mockOrderRepository.save).toHaveBeenCalledWith(aggregatedDto);
       expect(mockOrderRepository.save).toHaveBeenCalledTimes(1);
     });
 
@@ -88,7 +94,9 @@ describe('CreateOrderUseCase', () => {
         expect(result.error).toBeInstanceOf(UseCaseError);
         expect(result.error.message).toBe(`Failed to save Order`);
       }
-      expect(mockOrderRepository.save).toHaveBeenCalledWith(mockCreateOrderDto);
+
+      const aggregatedDto = orderFactory.createFromDto(mockCreateOrderDto);
+      expect(mockOrderRepository.save).toHaveBeenCalledWith(aggregatedDto);
       expect(mockOrderRepository.save).toHaveBeenCalledTimes(1);
     });
 
@@ -105,7 +113,9 @@ describe('CreateOrderUseCase', () => {
         expect(result.error.message).toBe('Unexpected use case error');
         expect(result.error.cause).toBe(repoError);
       }
-      expect(mockOrderRepository.save).toHaveBeenCalledWith(mockCreateOrderDto);
+
+      const aggregatedDto = orderFactory.createFromDto(mockCreateOrderDto);
+      expect(mockOrderRepository.save).toHaveBeenCalledWith(aggregatedDto);
       expect(mockOrderRepository.save).toHaveBeenCalledTimes(1);
     });
   });
