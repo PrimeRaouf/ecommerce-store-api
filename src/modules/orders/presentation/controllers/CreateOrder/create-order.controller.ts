@@ -1,23 +1,24 @@
 import { Injectable } from '@nestjs/common';
-import { GetOrderUseCase } from '../../../application/usecases/GetOrder/get-order.usecase';
 import { ControllerError } from '../../../../../core/errors/controller.error';
 import { isFailure, Result } from '../../../../../core/domain/result';
 import { ErrorFactory } from '../../../../../core/errors/error.factory';
+import { CreateOrderUseCase } from '../../../application/usecases/CreateOrder/create-order.usecase';
+import { CreateOrderDto } from '../../dto/create-order.dto';
 import { IOrder } from '../../../domain/interfaces/IOrder';
 
 @Injectable()
-export class GetOrderController {
-  constructor(private getOrderUseCase: GetOrderUseCase) {}
-  async handle(id: string): Promise<Result<IOrder, ControllerError>> {
+export class CreateOrderController {
+  constructor(private createOrderUseCase: CreateOrderUseCase) {}
+  async handle(dto: CreateOrderDto): Promise<Result<IOrder, ControllerError>> {
     try {
-      const orderResult = await this.getOrderUseCase.execute(id);
+      const orderResult = await this.createOrderUseCase.execute(dto);
       if (isFailure(orderResult)) {
         return ErrorFactory.ControllerError(
-          'Controller failed to get order',
+          'Controller failed to create Order',
           orderResult.error,
         );
       }
-      return Result.success(orderResult.value);
+      return Result.success<IOrder>(orderResult.value);
     } catch (error) {
       return ErrorFactory.ControllerError('Unexpected controller error', error);
     }

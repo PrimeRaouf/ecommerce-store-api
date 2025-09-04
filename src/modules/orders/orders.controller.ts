@@ -12,15 +12,19 @@ import { UpdateOrderDto } from './presentation/dto/update-order.dto';
 import { GetOrderController } from './presentation/controllers/GetOrder/get-order.controller';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { OrderResponseDto } from './presentation/dto/order-response.dto';
+import { CreateOrderController } from './presentation/controllers/CreateOrder/create-order.controller';
 
 @ApiTags('orders')
 @Controller('orders')
 export class OrdersController {
-  constructor(private getOrderController: GetOrderController) {}
+  constructor(
+    private getOrderController: GetOrderController,
+    private createOrderController: CreateOrderController,
+  ) {}
 
   @Post()
-  create(@Body() createOrderDto: CreateOrderDto) {
-    // return this.ordersService.create(createOrderDto);
+  createOrder(@Body() createOrderDto: CreateOrderDto) {
+    return this.createOrderController.handle(createOrderDto);
   }
 
   @Get()

@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { OrdersController } from './orders.controller';
 import { GetOrderController } from './presentation/controllers/GetOrder/get-order.controller';
-import { GetOrderUseCase } from './application/use-cases/GetOrder/getOrder.usecase';
+import { GetOrderUseCase } from './application/usecases/GetOrder/get-order.usecase';
 
 import { OrderRepository } from './domain/repositories/order-repository';
 import {
@@ -17,6 +17,9 @@ import { OrderEntity } from './infrastructure/orm/order.schema';
 import { CacheService } from '../../core/infrastructure/redis/cache/cache.service';
 import { RedisModule } from '../../core/infrastructure/redis/redis.module';
 import { OrderItemEntity } from './infrastructure/orm/order-item.schema';
+import { CreateOrderController } from './presentation/controllers/CreateOrder/create-order.controller';
+import { CreateOrderUseCase } from './application/usecases/CreateOrder/create-order.usecase';
+import { OrderFactory } from './domain/factories/order.factory';
 
 @Module({
   imports: [
@@ -51,10 +54,15 @@ import { OrderItemEntity } from './infrastructure/orm/order-item.schema';
       useExisting: REDIS_ORDER_REPOSITORY,
     },
 
+    // Domain
+    OrderFactory,
+
     // Use cases
+    CreateOrderUseCase,
     GetOrderUseCase,
 
     // Controllers
+    CreateOrderController,
     GetOrderController,
   ],
 })
