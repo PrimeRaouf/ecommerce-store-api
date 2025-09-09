@@ -1,0 +1,3 @@
+# .actrc file
+# Tells act to always use the .secrets file
+--secret-file .secrets
