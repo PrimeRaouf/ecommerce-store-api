@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { CreateOrderDto } from './presentation/dto/create-order.dto';
 import { UpdateOrderDto } from './presentation/dto/update-order.dto';
@@ -13,6 +14,8 @@ import { GetOrderController } from './presentation/controllers/GetOrder/get-orde
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { OrderResponseDto } from './presentation/dto/order-response.dto';
 import { CreateOrderController } from './presentation/controllers/CreateOrder/create-order.controller';
+import { ListOrdersController } from './presentation/controllers/ListOrders/list-orders.controller';
+import { ListOrdersQueryDto } from './presentation/dto/list-orders-query.dto';
 
 @ApiTags('orders')
 @Controller('orders')
@@ -20,6 +23,7 @@ export class OrdersController {
   constructor(
     private getOrderController: GetOrderController,
     private createOrderController: CreateOrderController,
+    private listOrdersController: ListOrdersController,
   ) {}
 
   @Post()
@@ -28,8 +32,10 @@ export class OrdersController {
   }
 
   @Get()
-  findAll() {
-    // return this.ordersService.findAll();
+  @ApiOperation({ summary: 'Get orders list with pagination and filtering' })
+  @ApiResponse({ status: 200, type: [OrderResponseDto] })
+  async findAll(@Query() query: ListOrdersQueryDto) {
+    return this.listOrdersController.handle(query);
   }
 
   @Get(':id')

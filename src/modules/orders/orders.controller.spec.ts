@@ -5,11 +5,14 @@ import { CreateOrderController } from './presentation/controllers/CreateOrder/cr
 import { CreateOrderDto } from './presentation/dto/create-order.dto';
 import { OrderStatus } from './domain/value-objects/order-status';
 import { IOrder } from './domain/interfaces/IOrder';
+import { ListOrdersController } from './presentation/controllers/ListOrders/list-orders.controller';
 
 describe('OrdersController', () => {
   let controller: OrdersController;
   let createOrderController: CreateOrderController;
   let getOrderController: GetOrderController;
+  let listOrdersController: ListOrdersController;
+
   let id: string;
   let mockOrder: IOrder;
   let mockCreateOrderDto: CreateOrderDto;
@@ -39,10 +42,7 @@ describe('OrdersController', () => {
       items: [
         {
           productId: 'product-1',
-          productName: 'Test Product',
           quantity: 2,
-          unitPrice: 10.5,
-          lineTotal: 21.0,
         },
       ],
       status: OrderStatus.PENDING,
@@ -60,11 +60,18 @@ describe('OrdersController', () => {
         {
           provide: GetOrderController,
           useValue: {
-            handle: jest.fn().mockResolvedValue({ id: 1, name: 'Test Order' }),
+            handle: jest.fn().mockResolvedValue(mockOrder),
+          },
+        },
+        {
+          provide: ListOrdersController,
+          useValue: {
+            handle: jest.fn().mockResolvedValue([mockOrder]),
           },
         },
       ],
     }).compile();
+
     id = 'OR00000001';
 
     controller = module.get<OrdersController>(OrdersController);
@@ -72,21 +79,36 @@ describe('OrdersController', () => {
       CreateOrderController,
     );
     getOrderController = module.get<GetOrderController>(GetOrderController);
+    listOrdersController =
+      module.get<ListOrdersController>(ListOrdersController);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
 
-  it('should call CreateOrderController.handle when createOrder is called', async () => {
-    await controller.createOrder(mockCreateOrderDto);
+  it('should call CreateOrderController.handle when createOrder is called and return its result', async () => {
+    const res = await controller.createOrder(mockCreateOrderDto);
     expect(createOrderController.handle).toHaveBeenCalledWith(
       mockCreateOrderDto,
     );
+    expect(res).toEqual(mockOrder);
   });
 
-  it('should call GetOrderController.handle when findOne is called', async () => {
-    await controller.findOne(id);
+  it('should call GetOrderController.handle when findOne is called and return its result', async () => {
+    const res = await controller.findOne(id);
     expect(getOrderController.handle).toHaveBeenCalledWith(id);
+    expect(res).toEqual(mockOrder);
+  });
+
+  it('should call ListOrdersController.handle when findAll is called and return its result', async () => {
+    const query = {} as any;
+    const res = await controller.findAll(query);
+    expect(listOrdersController.handle).toHaveBeenCalledWith(query);
+    expect(res).toEqual([mockOrder]);
   });
 });

@@ -1,5 +1,6 @@
 import { Result } from '../../../../core/domain/result';
 import { RepositoryError } from '../../../../core/errors/repository.error';
+import { ListOrdersQueryDto } from '../../presentation/dto/list-orders-query.dto';
 import {
   AggregatedOrderInput,
   AggregatedUpdateInput,
@@ -15,6 +16,8 @@ export abstract class OrderRepository {
     updateOrderDto: AggregatedUpdateInput,
   ): Promise<Result<IOrder, RepositoryError>>;
   abstract findById(id: string): Promise<Result<IOrder, RepositoryError>>;
-  abstract findAll(): Promise<Result<IOrder[], RepositoryError>>;
+  abstract ListOrders(
+    listOrdersQueryDto: ListOrdersQueryDto,
+  ): Promise<Result<IOrder[], RepositoryError>>;
   abstract deleteById(id: string): Promise<Result<void, RepositoryError>>;
 }
