@@ -1,3 +1,5 @@
-# .actrc file
-# Tells act to always use the .secrets file
+# Always use the .secrets file
 --secret-file .secrets
+
+# Always run the "ci" job by default
+-j ci
