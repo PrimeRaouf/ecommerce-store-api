@@ -3,6 +3,8 @@ import { Injectable } from '@nestjs/common';
 import { CreateOrderDto } from '../../presentation/dto/create-order.dto';
 import { UpdateOrderDto } from '../../presentation/dto/update-order.dto';
 import { CreateOrderItemDto } from '../../presentation/dto/create-order-item.dto';
+import { DomainError } from '../../../../core/errors/domain.error';
+import { OrderStatus, OrderStatusVO } from '../value-objects/order-status';
 
 export interface AggregatedOrderInput extends Omit<CreateOrderDto, 'items'> {
   items: CreateOrderItemDto[]; // no totalPrice here
@@ -38,7 +40,19 @@ export class OrderFactory {
     };
   }
 
-  updateFromDto(dto: UpdateOrderDto): AggregatedUpdateInput {
+  updateFromDto(
+    dto: UpdateOrderDto,
+    orderStatus: OrderStatus,
+  ): AggregatedUpdateInput | DomainError {
+    if (orderStatus) {
+      const status = new OrderStatusVO(orderStatus);
+      if (!status.isPending()) {
+        return new DomainError(
+          'Only orders with status PENDING can be updated.',
+        );
+      }
+    }
+
     if (!dto.items) {
       return { ...dto };
     }
