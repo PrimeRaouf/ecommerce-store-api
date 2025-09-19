@@ -34,7 +34,6 @@ describe('PostgresOrderRepository', () => {
         quantity: 2,
       },
     ],
-    status: 'pending' as any,
   };
 
   const updateOrderDto: AggregatedUpdateInput = {

@@ -53,7 +53,6 @@ describe('CreateOrderController', () => {
           quantity: 2,
         },
       ],
-      status: OrderStatus.PENDING,
     } as CreateOrderDto;
   });
   describe('handle', () => {
