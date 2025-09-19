@@ -1,7 +1,7 @@
 // src/modules/orders/domain/entities/order.entity.ts
 import { Money } from '../value-objects/money';
 import { OrderStatus, OrderStatusVO } from '../value-objects/order-status';
-import { OrderItem, OrderItemProps } from './OrderItem';
+import { OrderItem, OrderItemProps } from './order-items';
 
 export interface OrderProps {
   id: string;
@@ -92,19 +92,30 @@ export class Order {
     this.changeStatus(OrderStatus.PAID);
   }
 
+  process(): void {
+    this.changeStatus(OrderStatus.PROCESSING);
+  }
+
   ship(): void {
     this.changeStatus(OrderStatus.SHIPPED);
   }
 
-  isShippable(): boolean {
+  isProcessable(): boolean {
     return this._status.isPaid();
   }
 
-  isCancellable(): boolean {
-    return this._status.isPending() || this._status.isPaid();
+  isShippable(): boolean {
+    return this._status.isProcessing();
   }
 
-  // For persistence/serialization
+  isCancellable(): boolean {
+    return (
+      this._status.isPending() ||
+      this._status.isPaid() ||
+      this._status.isProcessing()
+    );
+  }
+
   toPrimitives() {
     return {
       id: this._id,

@@ -55,7 +55,6 @@ describe('OrdersController', () => {
           quantity: 2,
         },
       ],
-      status: OrderStatus.PENDING,
     } as CreateOrderDto;
 
     const module: TestingModule = await Test.createTestingModule({

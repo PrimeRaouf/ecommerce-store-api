@@ -48,11 +48,10 @@ describe('RedisOrderRepository', () => {
   const mockCreateOrderDto: AggregatedOrderInput = {
     customerId: 'customer-123',
     items: mockOrder.items,
-    status: mockOrder.status,
   };
 
   const mockUpdateOrderDto: AggregatedUpdateInput = {
-    status: OrderStatus.PAID,
+    items: mockOrder.items,
   };
 
   beforeEach(async () => {
