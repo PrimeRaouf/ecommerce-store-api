@@ -9,14 +9,14 @@
 - [🌟 Key Features](#-key-features)
 - [🚀 Quick Start](#-quick-start)
 - [🧪 Testing](#-testing)
-- [🗄️ Database Management](#-database-management)
+- [🗄️ Database Management](#database-management)
 - [🐳 Docker & Infrastructure](#-docker--infrastructure)
-- [🏗️ Project Architecture](#-project-architecture)
+- [🏗️ Project Architecture](#project-architecture)
 - [🔧 Environment Configuration](#-environment-configuration)
 - [📜 Available Scripts](#-available-scripts)
 - [🚦 API Endpoints](#-api-endpoints)
 - [🔐 Security & Best Practices](#-security--best-practices)
-- [🛠️ Troubleshooting](#-troubleshooting)
+- [🛠️ Troubleshooting](#troubleshooting)
 - [📊 Project Statistics](#-project-statistics)
 - [📄 License](#-license)
 - [🤝 Acknowledgments](#-acknowledgments)
@@ -164,7 +164,7 @@ npm run test:ci
 
 ---
 
-## 🗄️ Database Management
+## Database Management
 
 ### Migrations with TypeORM
 
@@ -221,7 +221,7 @@ npm run d:up:test
 
 ---
 
-## 🏗️ Project Architecture
+## Project Architecture
 
 ### Clean Architecture Layers
 
@@ -388,7 +388,7 @@ Full API documentation with request/response schemas available at: **`http://loc
 
 ---
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
