@@ -7,15 +7,15 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { OrderEntity } from './order.schema';
-import { IOrderItem } from '../../domain/interfaces/IOrderItem';
 import { numericToNumber } from '../../../../core/infrastructure/database/number.transformer';
+import { ProductEntity } from '../../../products/infrastructure/orm/product.schema';
 
 @Entity({ name: 'order_items' })
-export class OrderItemEntity implements IOrderItem {
+export class OrderItemEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ name: 'product_id', type: 'varchar' })
   productId: string;
 
   @Column({ type: 'varchar', nullable: true })
@@ -45,4 +45,11 @@ export class OrderItemEntity implements IOrderItem {
   })
   @JoinColumn({ name: 'order_id' })
   order: OrderEntity;
+
+  @ManyToOne(() => ProductEntity, {
+    eager: true,
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({ name: 'product_id' })
+  product: ProductEntity;
 }
