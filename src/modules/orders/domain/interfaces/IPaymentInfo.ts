@@ -3,6 +3,7 @@ import { PaymentMethod } from '../value-objects/payment-method';
 import { PaymentStatus } from '../value-objects/payment-status';
 
 export interface IPaymentInfo extends IPaymentInfoEditable {
+  id: string;
   method: PaymentMethod;
   amount: number;
 }

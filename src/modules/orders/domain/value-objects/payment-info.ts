@@ -1,17 +1,20 @@
 // src/modules/orders/domain/value-objects/payment-info.ts
 import { PaymentStatus, PaymentStatusVO } from './payment-status';
 import { PaymentMethod, PaymentMethodVO } from './payment-method';
+import { IPaymentInfo } from '../interfaces/IPaymentInfo';
 
 export interface PaymentInfoProps {
-  method: PaymentMethod | string;
-  status: PaymentStatus | string;
+  id: string;
+  method: PaymentMethod;
+  status: PaymentStatus;
   amount: number;
   transactionId?: string;
   paidAt?: Date;
   notes?: string;
 }
 
-export class PaymentInfo {
+export class PaymentInfo implements IPaymentInfo {
+  private readonly _id: string;
   private readonly _method: PaymentMethodVO;
   private _status: PaymentStatusVO;
   private readonly _amount: number;
@@ -22,6 +25,7 @@ export class PaymentInfo {
   constructor(props: PaymentInfoProps) {
     this.validateProps(props);
 
+    this._id = props.id;
     this._method = new PaymentMethodVO(props.method);
     this._status = new PaymentStatusVO(props.status);
     this._amount = props.amount;
@@ -46,12 +50,16 @@ export class PaymentInfo {
   }
 
   // Getters
-  get method(): PaymentMethodVO {
-    return this._method;
+  get id(): string {
+    return this._id;
   }
 
-  get status(): PaymentStatusVO {
-    return this._status;
+  get method(): PaymentMethod {
+    return this._method.value;
+  }
+
+  get status(): PaymentStatus {
+    return this._status.value;
   }
 
   get amount(): number {
@@ -147,6 +155,7 @@ export class PaymentInfo {
   equals(other: PaymentInfo): boolean {
     if (!other) return false;
     return (
+      this._id === other._id &&
       this._method.equals(other._method) &&
       this._status.equals(other._status) &&
       this._amount === other._amount &&
@@ -159,8 +168,9 @@ export class PaymentInfo {
   // For persistence/serialization
   toPrimitives(): PaymentInfoProps {
     return {
-      method: this._method.value, // Convert VO to primitive
-      status: this._status.value, // Convert VO to primitive
+      id: this._id,
+      method: this._method.value,
+      status: this._status.value,
       amount: this._amount,
       transactionId: this._transactionId,
       paidAt: this._paidAt,
@@ -173,16 +183,22 @@ export class PaymentInfo {
   }
 
   // Factory methods for common use cases
-  static createCOD(amount: number): PaymentInfo {
+  static createCOD(id: string, amount: number): PaymentInfo {
     return new PaymentInfo({
+      id,
       method: PaymentMethod.CASH_ON_DELIVERY,
       status: PaymentStatus.PENDING,
       amount,
     });
   }
 
-  static createStripe(amount: number, transactionId?: string): PaymentInfo {
+  static createStripe(
+    id: string,
+    amount: number,
+    transactionId?: string,
+  ): PaymentInfo {
     return new PaymentInfo({
+      id,
       method: PaymentMethod.STRIPE,
       status: transactionId ? PaymentStatus.COMPLETED : PaymentStatus.PENDING,
       amount,
@@ -191,8 +207,13 @@ export class PaymentInfo {
     });
   }
 
-  static createPayPal(amount: number, transactionId?: string): PaymentInfo {
+  static createPayPal(
+    id: string,
+    amount: number,
+    transactionId?: string,
+  ): PaymentInfo {
     return new PaymentInfo({
+      id,
       method: PaymentMethod.PAYPAL,
       status: transactionId ? PaymentStatus.COMPLETED : PaymentStatus.PENDING,
       amount,
