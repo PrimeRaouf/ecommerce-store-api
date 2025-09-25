@@ -1,4 +1,7 @@
-export interface IShippingAddress {
+export interface IShippingAddress extends IShippingAddressEditable {
+  id: string;
+}
+export interface IShippingAddressEditable {
   firstName: string;
   lastName: string;
   street: string;
