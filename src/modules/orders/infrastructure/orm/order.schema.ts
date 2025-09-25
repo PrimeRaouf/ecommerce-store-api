@@ -14,7 +14,6 @@ import { OrderItemEntity } from './order-item.schema';
 import { CustomerInfoEntity } from './customer-info.schema';
 import { ShippingAddressEntity } from './shipping-address.schema';
 import { PaymentInfoEntity } from './payment-info.schema';
-import { IOrder } from '../../domain/interfaces/IOrder';
 import { numericToNumber } from '../../../../core/infrastructure/database/number.transformer';
 import { OrderStatus } from '../../domain/value-objects/order-status';
 
@@ -33,7 +32,7 @@ import { OrderStatus } from '../../domain/value-objects/order-status';
   'createdAt',
 ])
 @Index('idx_orders_status_total_price', ['status', 'totalPrice'])
-export class OrderEntity implements IOrder {
+export class OrderEntity {
   @PrimaryColumn('varchar')
   id: string;
 
@@ -116,8 +115,4 @@ export class OrderEntity implements IOrder {
 
   @UpdateDateColumn()
   updatedAt: Date;
-
-  get totalAmount(): number {
-    return this.totalPrice;
-  }
 }

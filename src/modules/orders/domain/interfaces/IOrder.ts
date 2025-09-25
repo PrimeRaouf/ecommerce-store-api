@@ -18,7 +18,7 @@ export interface IOrder extends IOrderEditable {
   totalPrice: number;
   status: OrderStatus;
   createdAt: Date;
-  updatedAt?: Date;
+  updatedAt: Date;
 }
 
 export interface IOrderEditable {
