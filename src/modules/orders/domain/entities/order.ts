@@ -3,7 +3,6 @@ import { IOrder } from '../interfaces/IOrder';
 import { IOrderItem } from '../interfaces/IOrderItem';
 import { Money } from '../value-objects/money';
 import { OrderStatus, OrderStatusVO } from '../value-objects/order-status';
-import { PaymentStatus } from '../value-objects/payment-status';
 import { OrderItem, OrderItemProps } from './order-items';
 import {
   CustomerInfo,
@@ -20,10 +19,14 @@ import {
 } from '../interfaces/ICustomerInfo';
 import { IPaymentInfo, IPaymentInfoEditable } from '../interfaces/IPaymentInfo';
 import { IShippingAddress } from '../interfaces/IShippingAddress';
+import { PaymentStatusVO } from '../value-objects/payment-status';
+import { PaymentMethodVO } from '../value-objects/payment-method';
 
 export interface OrderProps {
   id: string;
   customerId: string;
+  paymentInfoId: string;
+  shippingAddressId: string;
   customerInfo: CustomerInfoProps;
   items: OrderItemProps[];
   shippingAddress: ShippingAddressProps;
@@ -37,6 +40,8 @@ export interface OrderProps {
 export class Order implements IOrder {
   private readonly _id: string;
   private readonly _customerId: string;
+  private readonly _paymentInfoId: string;
+  private readonly _shippingAddressId: string;
   private _customerInfo: CustomerInfo;
   private _items: OrderItem[];
   private _shippingAddress: ShippingAddress;
@@ -51,6 +56,8 @@ export class Order implements IOrder {
 
     this._id = props.id.trim();
     this._customerId = props.customerId.trim();
+    this._paymentInfoId = props.paymentInfoId.trim();
+    this._paymentInfoId = props.paymentInfoId.trim();
     this._customerInfo = CustomerInfo.fromPrimitives(props.customerInfo);
     this._items = props.items.map((item) => new OrderItem(item));
     this._shippingAddress = ShippingAddress.fromPrimitives(
@@ -88,6 +95,12 @@ export class Order implements IOrder {
   get customerId(): string {
     return this._customerId;
   }
+  get paymentInfoId(): string {
+    return this._paymentInfoId;
+  }
+  get shippingAddressId(): string {
+    return this._shippingAddressId;
+  }
 
   get customerInfo(): ICustomerInfo {
     return this._customerInfo.toPrimitives();
@@ -103,8 +116,9 @@ export class Order implements IOrder {
 
   get paymentInfo(): IPaymentInfo {
     return {
-      method: this._paymentInfo.method.value,
-      status: this._paymentInfo.status.value,
+      id: this._paymentInfo.id,
+      method: this._paymentInfo.method,
+      status: this._paymentInfo.status,
       amount: this._paymentInfo.amount,
       transactionId: this._paymentInfo.transactionId,
       paidAt: this._paymentInfo.paidAt,
@@ -194,21 +208,27 @@ export class Order implements IOrder {
     this._updatedAt = new Date();
   }
 
-  updatePaymentInfo(updates: IPaymentInfoEditable): void {
+  updatePaymentInfo(paymentInfoUpdates: IPaymentInfoEditable): void {
     this.assertCanBeUpdated();
 
-    if (updates.status) {
-      if (updates.status === PaymentStatus.COMPLETED) {
-        this._paymentInfo.markAsCompleted(updates.transactionId, updates.notes);
-      } else if (updates.status === PaymentStatus.FAILED) {
-        this._paymentInfo.markAsFailed(updates.notes);
+    if (paymentInfoUpdates.status) {
+      const status = new PaymentStatusVO(paymentInfoUpdates.status);
+      if (status.isCompleted()) {
+        this._paymentInfo.markAsCompleted(
+          paymentInfoUpdates.transactionId,
+          paymentInfoUpdates.notes,
+        );
+      } else if (status.isFailed()) {
+        this._paymentInfo.markAsFailed(paymentInfoUpdates.notes);
       }
     }
 
-    if (updates.transactionId || updates.notes) {
+    if (paymentInfoUpdates.transactionId || paymentInfoUpdates.notes) {
       this._paymentInfo.updateTransactionInfo(
-        updates.transactionId || this._paymentInfo.transactionId || '',
-        updates.notes,
+        paymentInfoUpdates.transactionId ||
+          this._paymentInfo.transactionId ||
+          '',
+        paymentInfoUpdates.notes,
       );
     }
 
@@ -312,10 +332,8 @@ export class Order implements IOrder {
   }
 
   requiresPayment(): boolean {
-    return (
-      this._paymentInfo.method.requiresImmediatePayment() &&
-      this._paymentInfo.isPending()
-    );
+    const method = new PaymentMethodVO(this._paymentInfo.method);
+    return method.requiresImmediatePayment() && this._paymentInfo.isPending();
   }
 
   // For persistence/serialization
@@ -323,8 +341,10 @@ export class Order implements IOrder {
     return {
       id: this._id,
       customerId: this._customerId,
+      paymentInfoId: this._paymentInfoId,
+      shippingAddressId: this._shippingAddressId,
       customerInfo: this.customerInfo,
-      items: this.items, // Already converted to IOrderItem[] by getter
+      items: this.items,
       shippingAddress: this.shippingAddress,
       paymentInfo: this.paymentInfo,
       customerNotes: this._customerNotes,
@@ -337,10 +357,12 @@ export class Order implements IOrder {
     };
   }
 
-  static fromPrimitives(data: any): Order {
+  static fromPrimitives(data: OrderProps): Order {
     return new Order({
       id: data.id,
       customerId: data.customerId,
+      paymentInfoId: data.paymentInfoId,
+      shippingAddressId: data.shippingAddressId,
       customerInfo: data.customerInfo,
       items: data.items || [],
       shippingAddress: data.shippingAddress,
@@ -364,6 +386,8 @@ export class Order implements IOrder {
     return new Order({
       id: props.id,
       customerId: props.customerId,
+      paymentInfoId: props.paymentInfo.id,
+      shippingAddressId: props.shippingAddress.id,
       customerInfo: props.customerInfo,
       items: props.items,
       shippingAddress: props.shippingAddress,
