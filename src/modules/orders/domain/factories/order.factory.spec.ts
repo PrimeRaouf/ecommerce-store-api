@@ -8,6 +8,7 @@ import {
 } from './order.factory';
 import { OrderStatus } from '../value-objects/order-status';
 import { DomainError } from '../../../../core/errors/domain.error';
+import { PaymentMethod } from '../value-objects/payment-method';
 
 describe('OrderFactory', () => {
   let factory: OrderFactory;
@@ -18,7 +19,6 @@ describe('OrderFactory', () => {
 
   it('aggregates duplicate items by productId when creating from DTO', () => {
     const dto = {
-      customerId: 'cust_1',
       items: [
         { productId: 'P1', quantity: 2 },
         { productId: 'P1', quantity: 3 },
@@ -39,10 +39,26 @@ describe('OrderFactory', () => {
   });
 
   it('throws when creating from DTO with no items', () => {
-    const dto = {
-      customerId: 'cust_2',
+    const dto: CreateOrderDto = {
+      customerInfo: {
+        email: 'jane.smith@example.com',
+        firstName: 'Jane',
+        lastName: 'Smith',
+      },
       items: [],
-    } as CreateOrderDto;
+      shippingAddress: {
+        firstName: 'Jane',
+        lastName: 'Smith',
+        street: '456 Oak Avenue',
+        city: 'Los Angeles',
+        state: 'CA',
+        postalCode: '90001',
+        country: 'US',
+      },
+      paymentInfo: {
+        method: PaymentMethod.CASH_ON_DELIVERY,
+      },
+    };
 
     expect(() => factory.createFromDto(dto)).toThrow(
       'Order must have at least one item.',
@@ -51,7 +67,6 @@ describe('OrderFactory', () => {
 
   it('returns aggregated items and does not compute totalPrice (create)', () => {
     const dto = {
-      customerId: 'cust_3',
       items: [
         { productId: 'P3', quantity: 1 },
         { productId: 'P4', quantity: 2 },
@@ -72,7 +87,6 @@ describe('OrderFactory', () => {
       OrderStatus.PENDING,
     ) as AggregatedUpdateInput;
 
-    expect(result.customerId).toBe('cust_3');
     expect(result.items).toBeUndefined();
   });
 

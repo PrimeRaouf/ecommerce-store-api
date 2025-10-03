@@ -1,5 +1,8 @@
+import { IShippingAddress } from '../interfaces/IShippingAddress';
+
 // src/modules/orders/domain/value-objects/shipping-address.ts
 export interface ShippingAddressProps {
+  id: string;
   firstName: string;
   lastName: string;
   street: string;
@@ -10,7 +13,8 @@ export interface ShippingAddressProps {
   phone?: string;
 }
 
-export class ShippingAddress {
+export class ShippingAddress implements IShippingAddress {
+  private readonly _id: string;
   private readonly _firstName: string;
   private readonly _lastName: string;
   private readonly _street: string;
@@ -24,6 +28,7 @@ export class ShippingAddress {
     this.validateRequiredFields(props);
     this.validateFormats(props);
 
+    this._id = props.id;
     this._firstName = props.firstName.trim();
     this._lastName = props.lastName.trim();
     this._street = props.street.trim();
@@ -68,6 +73,10 @@ export class ShippingAddress {
     ) {
       throw new Error('Invalid phone number format');
     }
+  }
+
+  get id(): string {
+    return this._id;
   }
 
   get firstName(): string {
@@ -136,8 +145,9 @@ export class ShippingAddress {
     );
   }
 
-  toPrimitives(): ShippingAddressProps {
+  toPrimitives(): IShippingAddress {
     return {
+      id: this._id,
       firstName: this._firstName,
       lastName: this._lastName,
       street: this._street,

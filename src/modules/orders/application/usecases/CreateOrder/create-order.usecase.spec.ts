@@ -12,6 +12,8 @@ import { CreateOrderDto } from '../../../presentation/dto/create-order.dto';
 import { IOrder } from '../../../domain/interfaces/IOrder';
 import { OrderStatus } from '../../../domain/value-objects/order-status';
 import { OrderFactory } from '../../../domain/factories/order.factory';
+import { PaymentMethod } from '../../../domain/value-objects/payment-method';
+import { PaymentStatus } from '../../../domain/value-objects/payment-status';
 
 describe('CreateOrderUseCase', () => {
   let useCase: CreateOrderUseCase;
@@ -24,7 +26,7 @@ describe('CreateOrderUseCase', () => {
     mockOrderRepository = {
       findById: jest.fn(),
       save: jest.fn(),
-      update: jest.fn(),
+      updateItemsInfo: jest.fn(),
       deleteById: jest.fn(),
       listOrders: jest.fn(),
       cancelById: jest.fn(),
@@ -34,33 +36,95 @@ describe('CreateOrderUseCase', () => {
     useCase = new CreateOrderUseCase(orderFactory, mockOrderRepository);
 
     mockOrder = {
-      id: '123e4567-e89b-12d3-a456-426614174000',
-      customerId: 'customer-123',
+      // Basic identifiers
+      id: 'OR0001',
+      customerId: 'CUST1',
+      paymentInfoId: 'PAY001',
+      shippingAddressId: 'ADDR001',
+
+      // Order items
       items: [
         {
           id: 'item-1',
-          productId: 'product-1',
-          productName: 'Test Product',
-          quantity: 2,
-          unitPrice: 10.5,
-          lineTotal: 21.0,
+          productId: 'PR1',
+          productName: 'P1',
+          quantity: 1,
+          unitPrice: 10,
+          lineTotal: 10,
         },
       ],
+
+      // Customer information
+      customerInfo: {
+        customerId: 'CUST1',
+        email: 'customer@example.com',
+        phone: '+1234567890',
+        firstName: 'John',
+        lastName: 'Doe',
+      },
+
+      // Payment information
+      paymentInfo: {
+        id: 'PAY001',
+        method: PaymentMethod.CREDIT_CARD,
+        amount: 15,
+        status: PaymentStatus.PENDING,
+        transactionId: 'TXN123456',
+        notes: 'Awaiting payment confirmation',
+      },
+
+      // Shipping address
+      shippingAddress: {
+        id: 'ADDR001',
+        firstName: 'John',
+        lastName: 'Doe',
+        street: '123 Main Street',
+        city: 'New York',
+        state: 'NY',
+        postalCode: '10001',
+        country: 'USA',
+        phone: '+1234567890',
+      },
+
+      // Pricing
+      subtotal: 10,
+      shippingCost: 5,
+      totalPrice: 15,
+
+      // Order status and timestamps
       status: OrderStatus.PENDING,
-      totalPrice: 21.0,
       createdAt: new Date('2024-01-01T00:00:00Z'),
       updatedAt: new Date('2024-01-01T00:00:00Z'),
-    } as IOrder;
+
+      // Optional customer notes
+      customerNotes: 'Please ring doorbell upon delivery',
+    };
 
     mockCreateOrderDto = {
-      customerId: 'customer-123',
+      customerInfo: {
+        email: 'jane.smith@example.com',
+        firstName: 'Jane',
+        lastName: 'Smith',
+      },
       items: [
         {
-          productId: 'product-1',
-          quantity: 2,
+          productId: 'PR3',
+          quantity: 1,
         },
       ],
-    } as CreateOrderDto;
+      shippingAddress: {
+        firstName: 'Jane',
+        lastName: 'Smith',
+        street: '456 Oak Avenue',
+        city: 'Los Angeles',
+        state: 'CA',
+        postalCode: '90001',
+        country: 'US',
+      },
+      paymentInfo: {
+        method: PaymentMethod.CASH_ON_DELIVERY,
+      },
+    };
   });
 
   describe('execute', () => {

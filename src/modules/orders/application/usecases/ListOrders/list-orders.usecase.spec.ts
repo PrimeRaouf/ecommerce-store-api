@@ -11,14 +11,22 @@ import { RepositoryError } from '../../../../../core/errors/repository.error';
 import { OrderRepository } from '../../../domain/repositories/order-repository';
 import { IOrder } from '../../../domain/interfaces/IOrder';
 import { ListOrdersQueryDto } from '../../../presentation/dto/list-orders-query.dto';
+import { OrderStatus } from '../../../domain/value-objects/order-status';
+import { PaymentMethod } from '../../../domain/value-objects/payment-method';
+import { PaymentStatus } from '../../../domain/value-objects/payment-status';
 
 describe('ListOrdersUsecase', () => {
   let usecase: ListOrdersUsecase;
   let mockRepo: jest.Mocked<OrderRepository>;
 
   const sampleOrder: IOrder = {
+    // Basic identifiers
     id: 'OR0001',
     customerId: 'CUST1',
+    paymentInfoId: 'PAY001',
+    shippingAddressId: 'ADDR001',
+
+    // Order items
     items: [
       {
         id: 'item-1',
@@ -29,17 +37,58 @@ describe('ListOrdersUsecase', () => {
         lineTotal: 10,
       },
     ],
-    status: 'pending' as any,
-    totalPrice: 10,
+
+    // Customer information
+    customerInfo: {
+      customerId: 'CUST1',
+      email: 'customer@example.com',
+      phone: '+1234567890',
+      firstName: 'John',
+      lastName: 'Doe',
+    },
+
+    // Payment information
+    paymentInfo: {
+      id: 'PAY001',
+      method: PaymentMethod.CREDIT_CARD,
+      amount: 15,
+      status: PaymentStatus.PENDING,
+      transactionId: 'TXN123456',
+      notes: 'Awaiting payment confirmation',
+    },
+
+    // Shipping address
+    shippingAddress: {
+      id: 'ADDR001',
+      firstName: 'John',
+      lastName: 'Doe',
+      street: '123 Main Street',
+      city: 'New York',
+      state: 'NY',
+      postalCode: '10001',
+      country: 'USA',
+      phone: '+1234567890',
+    },
+
+    // Pricing
+    subtotal: 10,
+    shippingCost: 5,
+    totalPrice: 15,
+
+    // Order status and timestamps
+    status: OrderStatus.PENDING,
     createdAt: new Date(),
     updatedAt: new Date(),
+
+    // Optional customer notes
+    customerNotes: 'Please ring doorbell upon delivery',
   };
 
   beforeEach(() => {
     mockRepo = {
       listOrders: jest.fn(),
       save: jest.fn(),
-      update: jest.fn(),
+      updateItemsInfo: jest.fn(),
       findById: jest.fn(),
       deleteById: jest.fn(),
       cancelById: jest.fn(),

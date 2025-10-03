@@ -24,10 +24,19 @@ import { ListOrdersController } from './presentation/controllers/ListOrders/list
 import { ListOrdersUsecase } from './application/usecases/ListOrders/list-orders.usecase';
 import { CancelOrderController } from './presentation/controllers/CancelOrder/cancel-order.controller';
 import { CancelOrderUseCase } from './application/usecases/CancelOrder/cancel-order.usecase';
+import { ShippingAddressEntity } from './infrastructure/orm/shipping-address.schema';
+import { PaymentInfoEntity } from './infrastructure/orm/payment-info.schema';
+import { CustomerInfoEntity } from './infrastructure/orm/customer-info.schema';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([OrderEntity, OrderItemEntity]),
+    TypeOrmModule.forFeature([
+      OrderEntity,
+      OrderItemEntity,
+      ShippingAddressEntity,
+      PaymentInfoEntity,
+      CustomerInfoEntity,
+    ]),
     RedisModule,
   ],
 
