@@ -10,6 +10,8 @@ import { UseCaseError } from '../../../../../core/errors/usecase.error';
 import { GetOrderUseCase } from './get-order.usecase';
 import { IOrder } from '../../../domain/interfaces/IOrder';
 import { OrderStatus } from '../../../domain/value-objects/order-status';
+import { PaymentMethod } from '../../../domain/value-objects/payment-method';
+import { PaymentStatus } from '../../../domain/value-objects/payment-status';
 
 describe('GetOrderUseCase', () => {
   let useCase: GetOrderUseCase;
@@ -21,7 +23,7 @@ describe('GetOrderUseCase', () => {
     mockOrderRepository = {
       findById: jest.fn(),
       save: jest.fn(),
-      update: jest.fn(),
+      updateItemsInfo: jest.fn(),
       deleteById: jest.fn(),
       listOrders: jest.fn(),
       cancelById: jest.fn(),
@@ -168,22 +170,68 @@ describe('GetOrderUseCase', () => {
     it('should return order with correct properties', async () => {
       // Arrange
       const orderWithSpecificData: IOrder = {
-        id: orderId,
+        // Basic identifiers
+        id: 'OR0000001',
         customerId: 'CU0000001',
+        paymentInfoId: 'PAY001',
+        shippingAddressId: 'ADDR001',
+
+        // Order items
         items: [
           {
-            id: 'item_1',
+            id: 'item-1',
             productId: 'PR0000001',
             productName: 'Expensive Item',
-            unitPrice: 999.99,
             quantity: 1,
-            lineTotal: 999.99,
+            unitPrice: 10,
+            lineTotal: 10,
           },
         ],
-        status: OrderStatus.PAID,
-        totalPrice: 999.99,
+
+        // Customer information
+        customerInfo: {
+          customerId: 'CU0000001',
+          email: 'customer@example.com',
+          phone: '+1234567890',
+          firstName: 'John',
+          lastName: 'Doe',
+        },
+
+        // Payment information
+        paymentInfo: {
+          id: 'PAY001',
+          method: PaymentMethod.CREDIT_CARD,
+          amount: 100,
+          status: PaymentStatus.PENDING,
+          transactionId: 'TXN123456',
+          notes: 'Awaiting payment confirmation',
+        },
+
+        // Shipping address
+        shippingAddress: {
+          id: 'ADDR001',
+          firstName: 'John',
+          lastName: 'Doe',
+          street: '123 Main Street',
+          city: 'New York',
+          state: 'NY',
+          postalCode: '10001',
+          country: 'USA',
+          phone: '+1234567890',
+        },
+
+        // Pricing
+        subtotal: 10,
+        shippingCost: 5,
+        totalPrice: 100,
+
+        // Order status and timestamps
+        status: OrderStatus.PENDING,
         createdAt: new Date('2025-01-01T10:00:00Z'),
         updatedAt: new Date('2025-01-02T10:00:00Z'),
+
+        // Optional customer notes
+        customerNotes: 'Please ring doorbell upon delivery',
       };
 
       mockOrderRepository.findById.mockResolvedValue(
@@ -199,14 +247,14 @@ describe('GetOrderUseCase', () => {
         const order = result.value;
         expect(order.id).toBe(orderId);
         expect(order.customerId).toBe('CU0000001');
-        expect(order.status).toBe(OrderStatus.PAID);
-        expect(order.totalPrice).toBe(999.99);
+        expect(order.status).toBe(OrderStatus.PENDING);
+        expect(order.totalPrice).toBe(100);
         expect(order.createdAt).toEqual(new Date('2025-01-01T10:00:00Z'));
         expect(order.updatedAt).toEqual(new Date('2025-01-02T10:00:00Z'));
         expect(order.items).toHaveLength(1);
         expect(order.items[0].productId).toBe('PR0000001');
         expect(order.items[0].productName).toBe('Expensive Item');
-        expect(order.items[0].unitPrice).toBe(999.99);
+        expect(order.items[0].unitPrice).toBe(10);
         expect(order.items[0].quantity).toBe(1);
       }
     });
@@ -214,22 +262,68 @@ describe('GetOrderUseCase', () => {
     it('should return order data correctly', async () => {
       // Arrange - Create order with multiple items
       const orderWithMultipleItems: IOrder = {
-        id: orderId,
+        // Basic identifiers
+        id: 'OR0000001',
         customerId: 'CU0000001',
+        paymentInfoId: 'PAY001',
+        shippingAddressId: 'ADDR001',
+
+        // Order items
         items: [
           {
-            id: 'item_1',
+            id: 'item-1',
             productId: 'PR0000001',
-            productName: 'Test Product',
-            unitPrice: 100,
+            productName: 'Expensive Item',
             quantity: 1,
-            lineTotal: 100,
+            unitPrice: 10,
+            lineTotal: 10,
           },
         ],
-        status: OrderStatus.PENDING,
+
+        // Customer information
+        customerInfo: {
+          customerId: 'CU0000001',
+          email: 'customer@example.com',
+          phone: '+1234567890',
+          firstName: 'John',
+          lastName: 'Doe',
+        },
+
+        // Payment information
+        paymentInfo: {
+          id: 'PAY001',
+          method: PaymentMethod.CREDIT_CARD,
+          amount: 100,
+          status: PaymentStatus.PENDING,
+          transactionId: 'TXN123456',
+          notes: 'Awaiting payment confirmation',
+        },
+
+        // Shipping address
+        shippingAddress: {
+          id: 'ADDR001',
+          firstName: 'John',
+          lastName: 'Doe',
+          street: '123 Main Street',
+          city: 'New York',
+          state: 'NY',
+          postalCode: '10001',
+          country: 'USA',
+          phone: '+1234567890',
+        },
+
+        // Pricing
+        subtotal: 10,
+        shippingCost: 5,
         totalPrice: 100,
+
+        // Order status and timestamps
+        status: OrderStatus.PENDING,
         createdAt: new Date('2025-01-01T10:00:00Z'),
         updatedAt: new Date('2025-01-01T10:00:00Z'),
+
+        // Optional customer notes
+        customerNotes: 'Please ring doorbell upon delivery',
       };
 
       mockOrderRepository.findById.mockResolvedValue(

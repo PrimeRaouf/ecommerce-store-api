@@ -8,15 +8,17 @@ import { ErrorFactory } from '../../../../../core/errors/error.factory';
 import { Order_REDIS } from '../../../../../core/infrastructure/redis/constants/redis.constants';
 import { IOrder } from '../../../domain/interfaces/IOrder';
 import { OrderStatus } from '../../../domain/value-objects/order-status';
-import {
-  AggregatedOrderInput,
-  AggregatedUpdateInput,
-} from '../../../domain/factories/order.factory';
+import { AggregatedOrderInput } from '../../../domain/factories/order.factory';
 import { ListOrdersQueryDto } from '../../../presentation/dto/list-orders-query.dto';
-import { OrderMapper } from '../../utils/order.mapper';
-import { OrderForCache } from '../../utils/order.type';
 import { RedisOrderRepository } from './redis.order-repository';
 import { Logger } from '@nestjs/common';
+import {
+  OrderForCache,
+  OrderCacheMapper,
+} from '../../persistence/mappers/order.mapper';
+import { PaymentMethod } from '../../../domain/value-objects/payment-method';
+import { PaymentStatus } from '../../../domain/value-objects/payment-status';
+import { CreateOrderItemDto } from '../../../presentation/dto/create-order-item.dto';
 
 describe('RedisOrderRepository', () => {
   let repository: RedisOrderRepository;
@@ -41,18 +43,47 @@ describe('RedisOrderRepository', () => {
     totalPrice: 21,
     createdAt: new Date('2024-01-01T00:00:00Z'),
     updatedAt: new Date('2024-01-01T00:00:00Z'),
+    paymentInfoId: '',
+    shippingAddressId: '',
+    customerInfo: {
+      firstName: 'Test',
+      lastName: 'User',
+      email: 'test@example.com',
+      phone: '1234567890',
+      customerId: '',
+    },
+    paymentInfo: {
+      method: PaymentMethod.CASH_ON_DELIVERY,
+      amount: 0,
+      id: '',
+      status: PaymentStatus.PENDING,
+    },
+    shippingAddress: {
+      street: '123 Test St',
+      city: 'Testville',
+      state: 'TS',
+      postalCode: '12345',
+      country: 'Testland',
+      id: '',
+      firstName: '',
+      lastName: '',
+    },
+    subtotal: 0,
+    shippingCost: 0,
   };
 
-  const mockCachedOrder: OrderForCache = OrderMapper.toCache(mockOrder);
+  const mockCachedOrder: OrderForCache = OrderCacheMapper.toCache(mockOrder);
 
   const mockCreateOrderDto: AggregatedOrderInput = {
-    customerId: 'customer-123',
+    customerInfo: mockOrder.customerInfo,
+    shippingAddress: mockOrder.shippingAddress,
+    paymentInfo: mockOrder.paymentInfo,
     items: mockOrder.items,
   };
 
-  const mockUpdateOrderDto: AggregatedUpdateInput = {
-    items: mockOrder.items,
-  };
+  const mockUpdateOrderDto: CreateOrderItemDto[] = [
+    { productId: 'product-1', quantity: 3 },
+  ];
 
   beforeEach(async () => {
     const mockLogger = {
@@ -72,7 +103,7 @@ describe('RedisOrderRepository', () => {
     };
     const mockPostgresRepo: jest.Mocked<OrderRepository> = {
       save: jest.fn(),
-      update: jest.fn(),
+      updateItemsInfo: jest.fn(),
       findById: jest.fn(),
       deleteById: jest.fn(),
       listOrders: jest.fn(),
@@ -144,14 +175,16 @@ describe('RedisOrderRepository', () => {
 
   describe('update', () => {
     const updatedOrder: IOrder = { ...mockOrder, status: OrderStatus.PAID };
-    const updatedCachedOrder = OrderMapper.toCache(updatedOrder);
+    const updatedCachedOrder = OrderCacheMapper.toCache(updatedOrder);
 
     it('should update order and cache', async () => {
-      postgresRepo.update.mockResolvedValue(Result.success(updatedOrder));
+      postgresRepo.updateItemsInfo.mockResolvedValue(
+        Result.success(updatedOrder),
+      );
       cacheService.set.mockResolvedValue(undefined);
       cacheService.delete.mockResolvedValue(undefined);
 
-      const result = await repository.update(
+      const result = await repository.updateItemsInfo(
         updatedOrder.id,
         mockUpdateOrderDto,
       );
@@ -170,9 +203,9 @@ describe('RedisOrderRepository', () => {
 
     it('should return failure if postgres update fails', async () => {
       const error = new RepositoryError('Update failed');
-      postgresRepo.update.mockResolvedValue(Result.failure(error));
+      postgresRepo.updateItemsInfo.mockResolvedValue(Result.failure(error));
 
-      const result = await repository.update(
+      const result = await repository.updateItemsInfo(
         updatedOrder.id,
         mockUpdateOrderDto,
       );
