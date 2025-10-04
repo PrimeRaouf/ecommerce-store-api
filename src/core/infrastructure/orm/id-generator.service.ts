@@ -49,28 +49,34 @@ export class IdGeneratorService {
 
     try {
       const rawResult = await queryRunner.query(
-        `
-      INSERT INTO id_sequences (entity_type, prefix, current_value, created_at, updated_at)
-      VALUES ($1, $2, 1, NOW(), NOW())
-      ON CONFLICT (entity_type) 
-      DO UPDATE SET 
-        current_value = id_sequences.current_value + 1,
-        updated_at = NOW()
-      RETURNING current_value
-      `,
+        `INSERT INTO id_sequences (entity_type, prefix, current_value, created_at, updated_at)
+         VALUES ($1, $2, 1, NOW(), NOW())
+         ON CONFLICT (entity_type)
+         DO UPDATE SET current_value = id_sequences.current_value + 1,
+                       updated_at = NOW()
+         RETURNING current_value`,
         [entityType, prefix],
       );
 
       await queryRunner.commitTransaction();
 
-      // Narrow the type safely
-      const result = rawResult as Array<{ current_value: number }>;
+      // Handle both string and number types from PostgreSQL
+      const result = rawResult as Array<{ current_value: number | string }>;
 
-      if (!result[0] || typeof result[0].current_value !== 'number') {
+      if (!result[0] || result[0].current_value == null) {
         throw new Error('Failed to retrieve current_value from id_sequences');
       }
 
-      const currentValue = result[0].current_value;
+      // Convert to number if it's a string
+      const currentValue =
+        typeof result[0].current_value === 'string'
+          ? parseInt(result[0].current_value, 10)
+          : result[0].current_value;
+
+      if (isNaN(currentValue)) {
+        throw new Error('Invalid current_value received from database');
+      }
+
       return this.formatId(prefix, currentValue);
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -91,7 +97,10 @@ export class IdGeneratorService {
       [entityType],
     );
 
-    return result.length > 0 ? result[0].current_value : 0;
+    if (result.length === 0) return 0;
+
+    const value = result[0].current_value;
+    return typeof value === 'string' ? parseInt(value, 10) : value;
   }
 
   // Helper method to reset sequence (useful for testing)

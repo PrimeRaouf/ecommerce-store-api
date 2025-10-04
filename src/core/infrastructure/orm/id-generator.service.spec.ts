@@ -68,19 +68,37 @@ describe('IdGeneratorService', () => {
       expect(result).toBe('OR0000123');
     });
 
-    it('should throw if result is missing or malformed', async () => {
+    it('should handle string values from database', async () => {
+      const mockResult = [{ current_value: '203' }];
+      queryRunner.query.mockResolvedValue(mockResult);
+
+      const result = await service.generateOrderId();
+
+      expect(result).toBe('OR0000203');
+    });
+
+    it('should throw if result is missing', async () => {
       queryRunner.query.mockResolvedValue([]);
       await expect(service.generateOrderId()).rejects.toThrow(
         'Failed to retrieve current_value from id_sequences',
       );
       expect(queryRunner.rollbackTransaction).toHaveBeenCalledTimes(1);
       expect(queryRunner.release).toHaveBeenCalledTimes(1);
+    });
 
-      jest.clearAllMocks();
-
-      queryRunner.query.mockResolvedValue([{ current_value: 'not-a-number' }]);
+    it('should throw if current_value is null or undefined', async () => {
+      queryRunner.query.mockResolvedValue([{ current_value: null }]);
       await expect(service.generateOrderId()).rejects.toThrow(
         'Failed to retrieve current_value from id_sequences',
+      );
+      expect(queryRunner.rollbackTransaction).toHaveBeenCalledTimes(1);
+      expect(queryRunner.release).toHaveBeenCalledTimes(1);
+    });
+
+    it('should throw if current_value is invalid', async () => {
+      queryRunner.query.mockResolvedValue([{ current_value: 'not-a-number' }]);
+      await expect(service.generateOrderId()).rejects.toThrow(
+        'Invalid current_value received from database',
       );
       expect(queryRunner.rollbackTransaction).toHaveBeenCalledTimes(1);
       expect(queryRunner.release).toHaveBeenCalledTimes(1);
@@ -99,6 +117,15 @@ describe('IdGeneratorService', () => {
         expect.stringContaining('INSERT INTO id_sequences'),
         ['PRODUCT', 'PR'],
       );
+    });
+
+    it('should handle string values from database', async () => {
+      const mockResult = [{ current_value: '42' }];
+      queryRunner.query.mockResolvedValue(mockResult);
+
+      const result = await service.generateProductId();
+
+      expect(result).toBe('PR0000042');
     });
   });
 
@@ -120,6 +147,15 @@ describe('IdGeneratorService', () => {
   describe('generateId (private method)', () => {
     it('should handle large sequence numbers correctly', async () => {
       const mockResult = [{ current_value: 9999999 }];
+      queryRunner.query.mockResolvedValue(mockResult);
+
+      const result = await service.generateOrderId();
+
+      expect(result).toBe('OR9999999');
+    });
+
+    it('should handle large sequence numbers as strings', async () => {
+      const mockResult = [{ current_value: '9999999' }];
       queryRunner.query.mockResolvedValue(mockResult);
 
       const result = await service.generateOrderId();
@@ -184,6 +220,24 @@ describe('IdGeneratorService', () => {
         expect(result).toBe(testCase.expected);
       }
     });
+
+    it('should pad string numbers correctly with leading zeros', async () => {
+      const testCases = [
+        { value: '1', expected: 'OR0000001' },
+        { value: '12', expected: 'OR0000012' },
+        { value: '123', expected: 'OR0000123' },
+        { value: '1234567', expected: 'OR1234567' },
+      ];
+
+      for (const testCase of testCases) {
+        const mockResult = [{ current_value: testCase.value }];
+        queryRunner.query.mockResolvedValue(mockResult);
+
+        const result = await service.generateOrderId();
+
+        expect(result).toBe(testCase.expected);
+      }
+    });
   });
 
   describe('getCurrentSequenceValue and resetSequence', () => {
@@ -196,6 +250,14 @@ describe('IdGeneratorService', () => {
       expect((dataSource.query as jest.Mock).mock.calls[0][0]).toContain(
         'SELECT current_value',
       );
+    });
+
+    it('should handle string values from database in getCurrentSequenceValue', async () => {
+      const mockResult = [{ current_value: '150' }];
+      dataSource.query = jest.fn().mockResolvedValue(mockResult);
+
+      const val = await service.getCurrentSequenceValue('ORDER');
+      expect(val).toBe(150);
     });
 
     it('should return 0 when no record exists', async () => {
