@@ -1,5 +1,11 @@
 // src/modules/orders/infrastructure/orm/payment-info.schema.ts
-import { Column, Entity, PrimaryGeneratedColumn, Index } from 'typeorm';
+import {
+  Column,
+  Entity,
+  PrimaryGeneratedColumn,
+  Index,
+  PrimaryColumn,
+} from 'typeorm';
 import { PaymentMethod } from '../../domain/value-objects/payment-method';
 import { PaymentStatus } from '../../domain/value-objects/payment-status';
 import { numericToNumber } from '../../../../core/infrastructure/database/number.transformer';
@@ -8,7 +14,7 @@ import { numericToNumber } from '../../../../core/infrastructure/database/number
 @Index('idx_payment_info_status', ['status'])
 @Index('idx_payment_info_method', ['method'])
 export class PaymentInfoEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn('varchar')
   id: string;
 
   @Column({

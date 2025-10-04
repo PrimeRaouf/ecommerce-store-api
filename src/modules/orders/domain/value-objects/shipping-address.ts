@@ -62,7 +62,17 @@ export class ShippingAddress implements IShippingAddress {
       throw new Error('Invalid postal code format');
     }
 
-    const validCountries = ['us', 'ca', 'gb', 'au', 'de', 'fr', 'it', 'es'];
+    const validCountries = [
+      'us',
+      'ca',
+      'gb',
+      'au',
+      'de',
+      'fr',
+      'it',
+      'es',
+      'dz',
+    ];
     if (!validCountries.includes(props.country.toLowerCase())) {
       throw new Error(`Unsupported country: ${props.country}`);
     }
