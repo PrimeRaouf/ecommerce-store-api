@@ -1,166 +1,149 @@
 import { CancelOrderUseCase } from './cancel-order.usecase';
-import { OrderRepository } from '../../../domain/repositories/order-repository';
-import { Result } from '../../../../../core/domain/result';
-import { RepositoryError } from '../../../../../core/errors/repository.error';
-import { Order } from '../../../domain/entities/order';
+import { MockOrderRepository } from '../../../testing/mocks/order-repository.mock';
+import { OrderTestFactory } from '../../../testing/factories/order.test.factory';
+import { OrderBuilder } from '../../../testing/builders/order.test.builder';
 import { OrderStatus } from '../../../domain/value-objects/order-status';
-import { PaymentMethod } from '../../../domain/value-objects/payment-method';
-import { PaymentStatus } from '../../../domain/value-objects/payment-status';
+import { RepositoryError } from '../../../../../core/errors/repository.error';
 import { UseCaseError } from '../../../../../core/errors/usecase.error';
 
 describe('CancelOrderUseCase', () => {
   let useCase: CancelOrderUseCase;
-  let mockRepo: jest.Mocked<OrderRepository>;
-
-  const orderId = 'OR0000001';
-
-  // Mock data for an order that IS in a cancellable state (e.g., 'pending')
-  const cancellableOrderPrimitives = {
-    id: orderId,
-    status: OrderStatus.PENDING,
-    customerId: 'CUST1',
-    paymentInfoId: 'PAY001',
-    shippingAddressId: 'ADDR001',
-    items: [
-      {
-        id: 'item-1',
-        productId: 'PR1',
-        productName: 'P1',
-        quantity: 1,
-        unitPrice: 10,
-        lineTotal: 10,
-      },
-    ],
-    customerInfo: {
-      customerId: 'CUST1',
-      email: 'customer@example.com',
-      phone: '+1234567890',
-      firstName: 'John',
-      lastName: 'Doe',
-    },
-    paymentInfo: {
-      id: 'PAY001',
-      method: PaymentMethod.CREDIT_CARD,
-      amount: 15,
-      status: PaymentStatus.PENDING,
-      transactionId: 'TXN123456',
-      notes: 'Awaiting payment confirmation',
-    },
-    shippingAddress: {
-      id: 'ADDR001',
-      firstName: 'John',
-      lastName: 'Doe',
-      street: '123 Main Street',
-      city: 'New York',
-      state: 'NY',
-      postalCode: '10001',
-      country: 'DZ',
-      phone: '+1234567890',
-    },
-    subtotal: 10,
-    shippingCost: 5,
-    totalPrice: 15,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    customerNotes: 'Please ring doorbell upon delivery',
-  };
-
-  const nonCancellableOrderPrimitives = {
-    ...cancellableOrderPrimitives,
-    status: OrderStatus.SHIPPED,
-  };
+  let mockRepository: MockOrderRepository;
 
   beforeEach(() => {
-    mockRepo = {
-      findById: jest.fn(),
-      cancelOrder: jest.fn(),
-    } as any;
-    useCase = new CancelOrderUseCase(mockRepo);
+    mockRepository = new MockOrderRepository();
+    useCase = new CancelOrderUseCase(mockRepository);
+  });
+
+  afterEach(() => {
+    mockRepository.reset();
   });
 
   it('should cancel the order and return its data on success', async () => {
-    // Arrange
-    const order = Order.fromPrimitives(cancellableOrderPrimitives);
-    mockRepo.findById.mockResolvedValue(Result.success(order));
-    mockRepo.cancelOrder.mockResolvedValue(Result.success(undefined));
+    const orderId = 'OR0000001';
+    const cancellableOrder = OrderTestFactory.createCancellableOrder({
+      id: orderId,
+    });
 
-    // Act
+    mockRepository.mockSuccessfulFind(cancellableOrder as any);
+    mockRepository.mockSuccessfulCancel();
+
     const result = await useCase.execute(orderId);
 
-    // Assert
-    expect(mockRepo.findById).toHaveBeenCalledWith(orderId);
-    expect(mockRepo.cancelOrder).toHaveBeenCalled();
+    expect(mockRepository.findById).toHaveBeenCalledWith(orderId);
+    expect(mockRepository.cancelOrder).toHaveBeenCalled();
     expect(result.isSuccess).toBe(true);
     if (result.isSuccess) {
-      // The use case should return the primitive form of the order with the new status
       expect(result.value.status).toBe(OrderStatus.CANCELLED);
     }
   });
 
   it('should return a failure result if the order is not found', async () => {
-    // Arrange
-    const repoError = new RepositoryError('Order not found');
-    mockRepo.findById.mockResolvedValue(Result.failure(repoError));
+    const orderId = 'OR0000001';
+    mockRepository.mockOrderNotFound(orderId);
 
-    // Act
     const result = await useCase.execute(orderId);
 
-    // Assert
     expect(result.isFailure).toBe(true);
     if (result.isFailure) {
-      expect(result.error).toBe(repoError);
+      expect(result.error).toBeInstanceOf(RepositoryError);
+      expect(result.error.message).toContain(
+        'Order with id OR0000001 not found',
+      );
     }
-    expect(mockRepo.cancelOrder).not.toHaveBeenCalled();
+    expect(mockRepository.cancelOrder).not.toHaveBeenCalled();
   });
 
   it('should return a failure result if the order is not in a cancellable state', async () => {
-    // Arrange
-    const order = Order.fromPrimitives(nonCancellableOrderPrimitives);
-    mockRepo.findById.mockResolvedValue(Result.success(order));
+    const orderId = 'OR0000001';
+    const nonCancellableOrder = OrderTestFactory.createNonCancellableOrder({
+      id: orderId,
+    });
 
-    // Act
+    mockRepository.mockSuccessfulFind(nonCancellableOrder as any);
+
     const result = await useCase.execute(orderId);
 
-    // Assert
     expect(result.isFailure).toBe(true);
     if (result.isFailure) {
       expect(result.error).toBeInstanceOf(UseCaseError);
       expect(result.error.message).toBe('Order is not in a cancellable state');
     }
-    expect(mockRepo.cancelOrder).not.toHaveBeenCalled();
+    expect(mockRepository.cancelOrder).not.toHaveBeenCalled();
   });
 
   it('should return a failure result if the repository fails to save the cancellation', async () => {
-    // Arrange
-    const order = Order.fromPrimitives(cancellableOrderPrimitives);
-    const repoError = new RepositoryError('DB write failed');
-    mockRepo.findById.mockResolvedValue(Result.success(order));
-    mockRepo.cancelOrder.mockResolvedValue(Result.failure(repoError));
+    const orderId = 'OR0000001';
+    const cancellableOrder = OrderTestFactory.createCancellableOrder({
+      id: orderId,
+    });
 
-    // Act
+    mockRepository.mockSuccessfulFind(cancellableOrder as any);
+    mockRepository.mockCancelFailure('DB write failed');
+
     const result = await useCase.execute(orderId);
 
-    // Assert
     expect(result.isFailure).toBe(true);
     if (result.isFailure) {
-      expect(result.error).toBe(repoError);
+      expect(result.error).toBeInstanceOf(RepositoryError);
+      expect(result.error.message).toBe('DB write failed');
     }
   });
 
   it('should return a failure result on an unexpected error', async () => {
-    // Arrange
+    const orderId = 'OR0000001';
     const unexpectedError = new Error('Database connection lost');
-    mockRepo.findById.mockRejectedValue(unexpectedError);
 
-    // Act
+    mockRepository.findById.mockRejectedValue(unexpectedError);
+
     const result = await useCase.execute(orderId);
 
-    // Assert
     expect(result.isFailure).toBe(true);
     if (result.isFailure) {
       expect(result.error).toBeInstanceOf(UseCaseError);
       expect(result.error.message).toBe('Unexpected Usecase Error');
       expect(result.error.cause).toBe(unexpectedError);
     }
+  });
+
+  describe('complex scenarios', () => {
+    it('should cancel multi-item order successfully', async () => {
+      const orderPrimitives = new OrderBuilder()
+        .withId('OR0000001')
+        .withItems(5)
+        .asCancellable()
+        .build();
+
+      mockRepository.mockSuccessfulFind(orderPrimitives);
+      mockRepository.mockSuccessfulCancel();
+
+      const result = await useCase.execute(orderPrimitives.id);
+
+      // Test the outcome
+      expect(result.isSuccess).toBe(true);
+      if (result.isSuccess) {
+        expect(result.value.status).toBe(OrderStatus.CANCELLED);
+        expect(result.value.id).toBe('OR0000001');
+      }
+      expect(mockRepository.findById).toHaveBeenCalledWith('OR0000001');
+      expect(mockRepository.cancelOrder).toHaveBeenCalledTimes(1);
+
+      const passedPrimitives = mockRepository.cancelOrder.mock.calls[0][0];
+      expect(passedPrimitives.status).toBe(OrderStatus.CANCELLED);
+    });
+
+    it('should not cancel shipped order', async () => {
+      const order = new OrderBuilder()
+        .withId('OR0000001')
+        .asNonCancellable()
+        .build();
+
+      mockRepository.mockSuccessfulFind(order);
+
+      const result = await useCase.execute(order.id);
+
+      expect(result.isFailure).toBe(true);
+      expect(mockRepository.cancelOrder).not.toHaveBeenCalled();
+    });
   });
 });

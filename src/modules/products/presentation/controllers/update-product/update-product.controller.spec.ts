@@ -34,9 +34,7 @@ describe('UpdateProductController', () => {
       price: 35000,
       sku: 'CAR-001',
       stockQuantity: 10,
-      createdAt: new Date('2025-01-01T10:00:00Z'),
-      updatedAt: new Date('2025-08-13T15:00:00Z'),
-    } as UpdateProductDto;
+    };
 
     product = new Product({
       id: productId,

@@ -44,14 +44,15 @@ describe('ProductsController', () => {
       description: 'A fast red sports car',
       price: 35000,
       sku: 'CAR-001',
-    } as CreateProductDto;
+      stockQuantity: 10,
+    };
 
     updateProductDto = {
       name: 'Car',
       description: 'A fast red sports car',
       price: 35000,
       sku: 'CAR-001',
-    } as UpdateProductDto;
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ProductsController],

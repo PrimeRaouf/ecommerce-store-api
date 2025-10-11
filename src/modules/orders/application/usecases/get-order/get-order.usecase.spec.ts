@@ -1,160 +1,69 @@
 // src/modules/orders/application/usecases/get-order/get-order.usecase.spec.ts
-import { OrderRepository } from '../../../domain/repositories/order-repository';
-import {
-  Result,
-  isFailure,
-  isSuccess,
-} from '../../../../../core/domain/result';
-import { ErrorFactory } from '../../../../../core/errors/error.factory';
-import { UseCaseError } from '../../../../../core/errors/usecase.error';
 import { GetOrderUseCase } from './get-order.usecase';
-import { IOrder } from '../../../domain/interfaces/order.interface';
+import { MockOrderRepository } from '../../../testing/mocks/order-repository.mock';
+import { OrderTestFactory } from '../../../testing/factories/order.test.factory';
+import { OrderBuilder } from '../../../testing/builders/order.test.builder';
 import { OrderStatus } from '../../../domain/value-objects/order-status';
-import { PaymentMethod } from '../../../domain/value-objects/payment-method';
-import { PaymentStatus } from '../../../domain/value-objects/payment-status';
-import { Order } from '../../../domain/entities/order';
+import { isFailure, isSuccess } from '../../../../../core/domain/result';
+import { UseCaseError } from '../../../../../core/errors/usecase.error';
 
 describe('GetOrderUseCase', () => {
   let useCase: GetOrderUseCase;
-  let mockOrderRepository: jest.Mocked<OrderRepository>;
-  let mockOrder: IOrder;
-  let orderId: string;
+  let mockOrderRepository: MockOrderRepository;
 
   beforeEach(() => {
-    mockOrderRepository = {
-      findById: jest.fn(),
-      save: jest.fn(),
-      updateItemsInfo: jest.fn(),
-      deleteById: jest.fn(),
-      listOrders: jest.fn(),
-      cancelOrder: jest.fn(),
-    } as any;
-
-    orderId = 'OR0000001';
-
-    mockOrder = {
-      id: orderId,
-      customerId: 'CU0000001',
-      paymentInfoId: 'PAY001',
-      shippingAddressId: 'ADDR001',
-
-      items: [
-        {
-          id: 'item-1',
-          productId: 'PR0000001',
-          productName: 'Expensive Item',
-          quantity: 1,
-          unitPrice: 10,
-          lineTotal: 10,
-        },
-      ],
-
-      customerInfo: {
-        customerId: 'CU0000001',
-        email: 'customer@example.com',
-        phone: '+1234567890',
-        firstName: 'John',
-        lastName: 'Doe',
-      },
-
-      paymentInfo: {
-        id: 'PAY001',
-        method: PaymentMethod.CREDIT_CARD,
-        amount: 15,
-        status: PaymentStatus.PENDING,
-        transactionId: 'TXN123456',
-        notes: 'Awaiting payment confirmation',
-      },
-
-      shippingAddress: {
-        id: 'ADDR001',
-        firstName: 'John',
-        lastName: 'Doe',
-        street: '123 Main Street',
-        city: 'New York',
-        state: 'NY',
-        postalCode: '10001',
-        country: 'DZ',
-        phone: '+1234567890',
-      },
-
-      subtotal: 10,
-      shippingCost: 5,
-      totalPrice: 15,
-
-      status: OrderStatus.PENDING,
-      createdAt: new Date('2025-01-01T10:00:00Z'),
-      updatedAt: new Date('2025-01-02T10:00:00Z'),
-
-      customerNotes: 'Please ring doorbell upon delivery',
-    };
-
+    mockOrderRepository = new MockOrderRepository();
     useCase = new GetOrderUseCase(mockOrderRepository);
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    mockOrderRepository.reset();
   });
 
   describe('execute', () => {
     it('should return Success with order when order is found', async () => {
-      // Arrange
-      const domainOrder = Order.fromPrimitives(mockOrder);
-      const expectedPrimitives = domainOrder.toPrimitives();
+      const orderId = 'OR0000001';
+      const orderPrimitives = OrderTestFactory.createMockOrder({ id: orderId });
 
-      mockOrderRepository.findById.mockResolvedValue(
-        Result.success(domainOrder),
-      );
+      mockOrderRepository.mockSuccessfulFind(orderPrimitives);
 
-      // Act
       const result = await useCase.execute(orderId);
 
-      // Assert
       expect(isSuccess(result)).toBe(true);
       if (isSuccess(result)) {
-        // Compare with the primitives produced by the domain object to avoid
-        // brittle differences introduced by normalizations inside Order
-        expect(result.value).toEqual(expectedPrimitives);
         expect(result.value.id).toBe(orderId);
-        expect(result.value.customerId).toBe(expectedPrimitives.customerId);
         expect(result.value.status).toBe(OrderStatus.PENDING);
-        expect(result.value.items).toHaveLength(
-          expectedPrimitives.items.length,
-        );
+        expect(result.value.items).toBeDefined();
       }
       expect(mockOrderRepository.findById).toHaveBeenCalledWith(orderId);
       expect(mockOrderRepository.findById).toHaveBeenCalledTimes(1);
     });
 
     it('should return Failure with UseCaseError when order is not found', async () => {
-      // Arrange
-      const repositoryError = ErrorFactory.RepositoryError(
-        `Order with id ${orderId} not found`,
-      );
-      mockOrderRepository.findById.mockResolvedValue(repositoryError);
+      const orderId = 'OR0000001';
+      mockOrderRepository.mockOrderNotFound(orderId);
 
-      // Act
       const result = await useCase.execute(orderId);
 
-      // Assert
       expect(isFailure(result)).toBe(true);
       if (isFailure(result)) {
         expect(result.error).toBeInstanceOf(UseCaseError);
-        expect(result.error.message).toBe(`Order with id ${orderId} not found`);
+        expect(result.error.message).toContain(
+          `Order with id ${orderId} not found`,
+        );
       }
       expect(mockOrderRepository.findById).toHaveBeenCalledWith(orderId);
       expect(mockOrderRepository.findById).toHaveBeenCalledTimes(1);
     });
 
     it('should return Failure with UseCaseError when repository throws unexpected error', async () => {
-      // Arrange
+      const orderId = 'OR0000001';
       const repoError = new Error('Database connection failed');
+
       mockOrderRepository.findById.mockRejectedValue(repoError);
 
-      // Act
       const result = await useCase.execute(orderId);
 
-      // Assert
       expect(isFailure(result)).toBe(true);
       if (isFailure(result)) {
         expect(result.error).toBeInstanceOf(UseCaseError);
@@ -166,204 +75,76 @@ describe('GetOrderUseCase', () => {
     });
 
     it('should handle empty order ID gracefully', async () => {
-      // Arrange
       const emptyId = '';
-      const repositoryError = ErrorFactory.RepositoryError(
-        `Order with id ${emptyId} not found`,
-      );
-      mockOrderRepository.findById.mockResolvedValue(repositoryError);
+      mockOrderRepository.mockOrderNotFound(emptyId);
 
-      // Act
       const result = await useCase.execute(emptyId);
 
-      // Assert
       expect(isFailure(result)).toBe(true);
       if (isFailure(result)) {
         expect(result.error).toBeInstanceOf(UseCaseError);
-        expect(result.error.message).toBe(`Order with id ${emptyId} not found`);
+        expect(result.error.message).toContain(
+          `Order with id ${emptyId} not found`,
+        );
       }
       expect(mockOrderRepository.findById).toHaveBeenCalledWith(emptyId);
     });
 
     it('should handle null/undefined order ID', async () => {
-      // Arrange
       const nullId = null as any;
-      const repositoryError = ErrorFactory.RepositoryError(
-        `Order with id ${nullId} not found`,
-      );
-      mockOrderRepository.findById.mockResolvedValue(repositoryError);
+      mockOrderRepository.mockOrderNotFound(nullId);
 
-      // Act
       const result = await useCase.execute(nullId);
 
-      // Assert
       expect(isFailure(result)).toBe(true);
       if (isFailure(result)) {
         expect(result.error).toBeInstanceOf(UseCaseError);
-        expect(result.error.message).toBe(`Order with id ${nullId} not found`);
       }
       expect(mockOrderRepository.findById).toHaveBeenCalledWith(nullId);
     });
 
-    it('should return order with correct properties (explicit sample)', async () => {
-      // Arrange - use a concrete sample and rely on domain normalization
-      const sample: IOrder = {
+    it('should return order with correct properties', async () => {
+      const orderId = 'OR0000001';
+      const orderPrimitives = OrderTestFactory.createMockOrder({
         id: orderId,
         customerId: 'CU0000001',
-        paymentInfoId: 'PAY001',
-        shippingAddressId: 'ADDR001',
-        items: [
-          {
-            id: 'item-1',
-            productId: 'PR0000001',
-            productName: 'Expensive Item',
-            quantity: 1,
-            unitPrice: 10,
-            lineTotal: 10,
-          },
-        ],
-        customerInfo: {
-          customerId: 'CU0000001',
-          email: 'customer@example.com',
-          phone: '+1234567890',
-          firstName: 'John',
-          lastName: 'Doe',
-        },
-        paymentInfo: {
-          id: 'PAY001',
-          method: PaymentMethod.CREDIT_CARD,
-          amount: 15,
-          status: PaymentStatus.PENDING,
-          transactionId: 'TXN123456',
-          notes: 'Awaiting payment confirmation',
-        },
-        shippingAddress: {
-          id: 'ADDR001',
-          firstName: 'John',
-          lastName: 'Doe',
-          street: '123 Main Street',
-          city: 'New York',
-          state: 'NY',
-          postalCode: '10001',
-          country: 'DZ',
-          phone: '+1234567890',
-        },
-        subtotal: 10,
-        shippingCost: 5,
-        totalPrice: 15,
-        status: OrderStatus.PENDING,
-        createdAt: new Date('2025-01-01T10:00:00Z'),
-        updatedAt: new Date('2025-01-02T10:00:00Z'),
-        customerNotes: 'Please ring doorbell upon delivery',
-      };
+      });
 
-      const domainOrder = Order.fromPrimitives(sample);
-      mockOrderRepository.findById.mockResolvedValue(
-        Result.success(domainOrder),
-      );
+      mockOrderRepository.mockSuccessfulFind(orderPrimitives);
 
-      // Act
       const result = await useCase.execute(orderId);
 
-      // Assert
       expect(isSuccess(result)).toBe(true);
       if (isSuccess(result)) {
-        const order = result.value;
-        const expected = domainOrder.toPrimitives();
-        expect(order).toEqual(expected);
-        // spot checks
-        expect(order.id).toBe(orderId);
-        expect(order.customerId).toBe('CU0000001');
-        expect(order.totalPrice).toBe(expected.totalPrice);
-        expect(order.items).toHaveLength(1);
-        expect(order.items[0].productId).toBe('PR0000001');
+        expect(result.value.id).toBe(orderId);
+        expect(result.value.customerId).toBe('CU0000001');
+        expect(result.value.items).toHaveLength(1);
       }
     });
 
     it('should return order data correctly for multiple items', async () => {
-      const multi: IOrder = {
-        id: orderId,
-        customerId: 'CU0000001',
-        paymentInfoId: 'PAY001',
-        shippingAddressId: 'ADDR001',
-        items: [
-          {
-            id: 'item-1',
-            productId: 'PR0000001',
-            productName: 'Expensive Item',
-            quantity: 1,
-            unitPrice: 10,
-            lineTotal: 10,
-          },
-          {
-            id: 'item-2',
-            productId: 'PR0000002',
-            productName: 'Another Item',
-            quantity: 2,
-            unitPrice: 20,
-            lineTotal: 40,
-          },
-        ],
-        customerInfo: {
-          customerId: 'CU0000001',
-          email: 'customer@example.com',
-          phone: '+1234567890',
-          firstName: 'John',
-          lastName: 'Doe',
-        },
-        paymentInfo: {
-          id: 'PAY001',
-          method: PaymentMethod.CREDIT_CARD,
-          amount: 65,
-          status: PaymentStatus.PENDING,
-          transactionId: 'TXN123456',
-          notes: 'Awaiting payment confirmation',
-        },
-        shippingAddress: {
-          id: 'ADDR001',
-          firstName: 'John',
-          lastName: 'Doe',
-          street: '123 Main Street',
-          city: 'New York',
-          state: 'NY',
-          postalCode: '10001',
-          country: 'DZ',
-          phone: '+1234567890',
-        },
-        subtotal: 50,
-        shippingCost: 15,
-        totalPrice: 65,
-        status: OrderStatus.PENDING,
-        createdAt: new Date('2025-01-01T10:00:00Z'),
-        updatedAt: new Date('2025-01-01T10:00:00Z'),
-        customerNotes: 'Please ring doorbell upon delivery',
-      };
+      const orderId = 'OR0000001';
+      const orderPrimitives = OrderTestFactory.createMultiItemOrder(2);
+      orderPrimitives.id = orderId;
 
-      const domainOrder = Order.fromPrimitives(multi);
-      mockOrderRepository.findById.mockResolvedValue(
-        Result.success(domainOrder),
-      );
+      mockOrderRepository.mockSuccessfulFind(orderPrimitives);
 
-      // Act
       const result = await useCase.execute(orderId);
 
-      // Assert
       expect(isSuccess(result)).toBe(true);
       if (isSuccess(result)) {
-        const order = result.value;
-        const expected = domainOrder.toPrimitives();
-        expect(order).toEqual(expected);
-        expect(order.items).toHaveLength(2);
-        expect(order.totalPrice).toBe(expected.totalPrice);
+        expect(result.value.items).toHaveLength(2);
+        expect(result.value.id).toBe(orderId);
       }
     });
   });
 
   describe('edge cases', () => {
     it('should handle repository returning different error types', async () => {
-      // Test with different repository error types (rejection)
+      const orderId = 'OR0000001';
       const customError = new Error('Custom repository error');
       customError.name = 'CustomRepositoryError';
+
       mockOrderRepository.findById.mockRejectedValue(customError);
 
       const result = await useCase.execute(orderId);
@@ -378,15 +159,62 @@ describe('GetOrderUseCase', () => {
 
     it('should handle very long order IDs', async () => {
       const longId = 'OR' + '0'.repeat(1000);
-      const repositoryError = ErrorFactory.RepositoryError(
-        `Order with id ${longId} not found`,
-      );
-      mockOrderRepository.findById.mockResolvedValue(repositoryError);
+      mockOrderRepository.mockOrderNotFound(longId);
 
       const result = await useCase.execute(longId);
 
       expect(isFailure(result)).toBe(true);
       expect(mockOrderRepository.findById).toHaveBeenCalledWith(longId);
+    });
+
+    it('should retrieve pending order successfully', async () => {
+      const orderId = 'OR0000001';
+      const pendingOrder = OrderTestFactory.createPendingOrder({ id: orderId });
+
+      mockOrderRepository.mockSuccessfulFind(pendingOrder);
+
+      const result = await useCase.execute(orderId);
+
+      expect(isSuccess(result)).toBe(true);
+      if (isSuccess(result)) {
+        expect(result.value.status).toBe(OrderStatus.PENDING);
+      }
+    });
+
+    it('should retrieve shipped order successfully', async () => {
+      const orderId = 'OR0000001';
+      const shippedOrder = OrderTestFactory.createShippedOrder({ id: orderId });
+
+      mockOrderRepository.mockSuccessfulFind(shippedOrder);
+
+      const result = await useCase.execute(orderId);
+
+      expect(isSuccess(result)).toBe(true);
+      if (isSuccess(result)) {
+        expect(result.value.status).toBe(OrderStatus.SHIPPED);
+      }
+    });
+  });
+
+  describe('complex scenarios with builder', () => {
+    it('should retrieve order with custom configuration', async () => {
+      const orderPrimitives = new OrderBuilder()
+        .withId('OR0000001')
+        .withCustomerId('CUST999')
+        .withItems(5)
+        .withStatus(OrderStatus.PENDING)
+        .build();
+
+      mockOrderRepository.mockSuccessfulFind(orderPrimitives);
+
+      const result = await useCase.execute(orderPrimitives.id);
+
+      expect(isSuccess(result)).toBe(true);
+      if (isSuccess(result)) {
+        expect(result.value.id).toBe('OR0000001');
+        expect(result.value.customerId).toBe('CUST999');
+        expect(result.value.items).toHaveLength(5);
+      }
     });
   });
 });

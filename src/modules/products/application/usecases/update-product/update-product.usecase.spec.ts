@@ -36,7 +36,7 @@ describe('UpdateProductUseCase', () => {
       price: 35000,
       sku: 'CAR-001',
       stockQuantity: 10,
-    } as UpdateProductDto;
+    };
 
     product = new Product({
       id: id_param,

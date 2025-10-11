@@ -1,148 +1,188 @@
 // src/modules/orders/application/usecases/ListOrders/list-orders.usecase.spec.ts
 import { ListOrdersUsecase } from './list-orders.usecase';
-import {
-  Result,
-  isSuccess,
-  isFailure,
-} from '../../../../../core/domain/result';
-
+import { MockOrderRepository } from '../../../testing/mocks/order-repository.mock';
+import { OrderTestFactory } from '../../../testing/factories/order.test.factory';
+import { isSuccess, isFailure } from '../../../../../core/domain/result';
 import { UseCaseError } from '../../../../../core/errors/usecase.error';
 import { RepositoryError } from '../../../../../core/errors/repository.error';
-import { OrderRepository } from '../../../domain/repositories/order-repository';
-import { IOrder } from '../../../domain/interfaces/order.interface';
 import { ListOrdersQueryDto } from '../../../presentation/dto/list-orders-query.dto';
+import { Result } from '../../../../../core/domain/result';
 import { OrderStatus } from '../../../domain/value-objects/order-status';
-import { PaymentMethod } from '../../../domain/value-objects/payment-method';
-import { PaymentStatus } from '../../../domain/value-objects/payment-status';
 
 describe('ListOrdersUsecase', () => {
   let usecase: ListOrdersUsecase;
-  let mockRepo: jest.Mocked<OrderRepository>;
-
-  const sampleOrder: IOrder = {
-    // Basic identifiers
-    id: 'OR0001',
-    customerId: 'CUST1',
-    paymentInfoId: 'PAY001',
-    shippingAddressId: 'ADDR001',
-
-    // Order items
-    items: [
-      {
-        id: 'item-1',
-        productId: 'PR1',
-        productName: 'P1',
-        quantity: 1,
-        unitPrice: 10,
-        lineTotal: 10,
-      },
-    ],
-
-    // Customer information
-    customerInfo: {
-      customerId: 'CUST1',
-      email: 'customer@example.com',
-      phone: '+1234567890',
-      firstName: 'John',
-      lastName: 'Doe',
-    },
-
-    // Payment information
-    paymentInfo: {
-      id: 'PAY001',
-      method: PaymentMethod.CREDIT_CARD,
-      amount: 15,
-      status: PaymentStatus.PENDING,
-      transactionId: 'TXN123456',
-      notes: 'Awaiting payment confirmation',
-    },
-
-    // Shipping address
-    shippingAddress: {
-      id: 'ADDR001',
-      firstName: 'John',
-      lastName: 'Doe',
-      street: '123 Main Street',
-      city: 'New York',
-      state: 'NY',
-      postalCode: '10001',
-      country: 'USA',
-      phone: '+1234567890',
-    },
-
-    // Pricing
-    subtotal: 10,
-    shippingCost: 5,
-    totalPrice: 15,
-
-    // Order status and timestamps
-    status: OrderStatus.PENDING,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-
-    // Optional customer notes
-    customerNotes: 'Please ring doorbell upon delivery',
-  };
+  let mockRepository: MockOrderRepository;
 
   beforeEach(() => {
-    mockRepo = {
-      listOrders: jest.fn(),
-      save: jest.fn(),
-      updateItemsInfo: jest.fn(),
-      findById: jest.fn(),
-      deleteById: jest.fn(),
-      cancelOrder: jest.fn(),
-    };
-
-    usecase = new ListOrdersUsecase(mockRepo);
+    mockRepository = new MockOrderRepository();
+    usecase = new ListOrdersUsecase(mockRepository);
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    mockRepository.reset();
   });
 
   it('returns success with list of orders when repository returns success', async () => {
     const dto: ListOrdersQueryDto = {};
+    const sampleOrder = OrderTestFactory.createMockOrder();
 
-    mockRepo.listOrders.mockResolvedValue(Result.success([sampleOrder]));
+    mockRepository.mockSuccessfulList([sampleOrder]);
 
     const result = await usecase.execute(dto);
 
-    expect(mockRepo.listOrders).toHaveBeenCalledWith(dto);
+    expect(mockRepository.listOrders).toHaveBeenCalledWith(dto);
     expect(isSuccess(result)).toBe(true);
     if (isSuccess(result)) {
       expect(result.value).toEqual([sampleOrder]);
+      expect(result.value).toHaveLength(1);
+    }
+  });
+
+  it('returns success with multiple orders', async () => {
+    const dto: ListOrdersQueryDto = {};
+    const orders = [
+      OrderTestFactory.createPendingOrder({ id: 'OR0001' }),
+      OrderTestFactory.createShippedOrder({ id: 'OR0002' }),
+      OrderTestFactory.createCancelledOrder({ id: 'OR0003' }),
+    ];
+
+    mockRepository.mockSuccessfulList(orders);
+
+    const result = await usecase.execute(dto);
+
+    expect(isSuccess(result)).toBe(true);
+    if (isSuccess(result)) {
+      expect(result.value).toHaveLength(3);
+      expect(result.value[0].id).toBe('OR0001');
+      expect(result.value[1].id).toBe('OR0002');
+      expect(result.value[2].id).toBe('OR0003');
+    }
+  });
+
+  it('returns success with empty list when no orders exist', async () => {
+    const dto: ListOrdersQueryDto = {};
+
+    mockRepository.mockSuccessfulList([]);
+
+    const result = await usecase.execute(dto);
+
+    expect(mockRepository.listOrders).toHaveBeenCalledWith(dto);
+    expect(isSuccess(result)).toBe(true);
+    if (isSuccess(result)) {
+      expect(result.value).toEqual([]);
+      expect(result.value).toHaveLength(0);
     }
   });
 
   it('propagates repository failure as usecase failure', async () => {
     const dto: ListOrdersQueryDto = {};
     const repoErr = new RepositoryError('repo failed');
-    mockRepo.listOrders.mockResolvedValue(Result.failure(repoErr));
+
+    mockRepository.listOrders.mockResolvedValue(Result.failure(repoErr));
 
     const result = await usecase.execute(dto);
 
-    expect(mockRepo.listOrders).toHaveBeenCalledWith(dto);
+    expect(mockRepository.listOrders).toHaveBeenCalledWith(dto);
     expect(isFailure(result)).toBe(true);
     if (isFailure(result)) {
       expect(result.error).toBe(repoErr);
+      expect(result.error.message).toBe('repo failed');
     }
   });
 
   it('returns UseCaseError when repository throws an unexpected error', async () => {
     const dto: ListOrdersQueryDto = {};
     const thrown = new Error('boom');
-    mockRepo.listOrders.mockRejectedValue(thrown);
+
+    mockRepository.listOrders.mockRejectedValue(thrown);
 
     const result = await usecase.execute(dto);
 
-    expect(mockRepo.listOrders).toHaveBeenCalledWith(dto);
+    expect(mockRepository.listOrders).toHaveBeenCalledWith(dto);
     expect(isFailure(result)).toBe(true);
     if (isFailure(result)) {
       expect(result.error).toBeInstanceOf(UseCaseError);
-      expect((result.error as any).message).toContain(
-        'Unexpected Error Occured',
-      );
+      expect(result.error.message).toContain('Unexpected Error Occured');
+      expect(result.error.cause).toBe(thrown);
     }
+  });
+
+  describe('filtering and querying', () => {
+    it('should pass query parameters to repository', async () => {
+      const dto: ListOrdersQueryDto = {
+        status: OrderStatus.PENDING,
+        customerId: 'CUST1',
+      };
+      const orders = [OrderTestFactory.createPendingOrder()];
+
+      mockRepository.mockSuccessfulList(orders);
+
+      const result = await usecase.execute(dto);
+
+      expect(mockRepository.listOrders).toHaveBeenCalledWith(dto);
+      expect(isSuccess(result)).toBe(true);
+    });
+
+    it('should handle pagination parameters', async () => {
+      const dto: ListOrdersQueryDto = {
+        page: 1,
+        limit: 10,
+      };
+      const orders = Array.from({ length: 10 }, (_, i) =>
+        OrderTestFactory.createMockOrder({ id: `OR000${i}` }),
+      );
+
+      mockRepository.mockSuccessfulList(orders);
+
+      const result = await usecase.execute(dto);
+
+      expect(mockRepository.listOrders).toHaveBeenCalledWith(dto);
+      expect(isSuccess(result)).toBe(true);
+      if (isSuccess(result)) {
+        expect(result.value).toHaveLength(10);
+      }
+    });
+  });
+
+  describe('edge cases', () => {
+    it('should handle repository returning orders with different statuses', async () => {
+      const dto: ListOrdersQueryDto = {};
+      const orders = [
+        OrderTestFactory.createPendingOrder(),
+        OrderTestFactory.createShippedOrder(),
+        OrderTestFactory.createCancelledOrder(),
+      ];
+
+      mockRepository.mockSuccessfulList(orders);
+
+      const result = await usecase.execute(dto);
+
+      expect(isSuccess(result)).toBe(true);
+      if (isSuccess(result)) {
+        expect(result.value).toHaveLength(3);
+        expect(result.value.map((o) => o.status)).toContain('pending');
+        expect(result.value.map((o) => o.status)).toContain('shipped');
+        expect(result.value.map((o) => o.status)).toContain('cancelled');
+      }
+    });
+
+    it('should handle multi-item orders in list', async () => {
+      const dto: ListOrdersQueryDto = {};
+      const orders = [
+        OrderTestFactory.createMultiItemOrder(3),
+        OrderTestFactory.createMultiItemOrder(5),
+      ];
+
+      mockRepository.mockSuccessfulList(orders);
+
+      const result = await usecase.execute(dto);
+
+      expect(isSuccess(result)).toBe(true);
+      if (isSuccess(result)) {
+        expect(result.value).toHaveLength(2);
+        expect(result.value[0].items.length).toBeGreaterThan(1);
+        expect(result.value[1].items.length).toBeGreaterThan(1);
+      }
+    });
   });
 });
