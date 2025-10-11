@@ -29,7 +29,7 @@ describe('CreateOrderUseCase', () => {
       updateItemsInfo: jest.fn(),
       deleteById: jest.fn(),
       listOrders: jest.fn(),
-      cancelById: jest.fn(),
+      cancelOrder: jest.fn(),
     };
     orderFactory = new OrderFactory();
 
