@@ -91,7 +91,7 @@ describe('ListOrdersUsecase', () => {
       updateItemsInfo: jest.fn(),
       findById: jest.fn(),
       deleteById: jest.fn(),
-      cancelById: jest.fn(),
+      cancelOrder: jest.fn(),
     };
 
     usecase = new ListOrdersUsecase(mockRepo);

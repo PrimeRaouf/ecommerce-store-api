@@ -21,7 +21,7 @@ export class GetOrderUseCase extends UseCase<string, IOrder, UseCaseError> {
         return ErrorFactory.UseCaseError(`Order with id ${id} not found`);
       }
 
-      return Result.success(orderResult.value);
+      return Result.success(orderResult.value.toPrimitives());
     } catch (error) {
       return ErrorFactory.UseCaseError('Unexpected use case error', error);
     }

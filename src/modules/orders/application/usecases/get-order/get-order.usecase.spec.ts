@@ -1,4 +1,4 @@
-// src/modules/orders/application/usecases/GetOrder/get-order.usecase.spec.ts
+// src/modules/orders/application/usecases/get-order/get-order.usecase.spec.ts
 import { OrderRepository } from '../../../domain/repositories/order-repository';
 import {
   Result,
@@ -12,6 +12,7 @@ import { IOrder } from '../../../domain/interfaces/order.interface';
 import { OrderStatus } from '../../../domain/value-objects/order-status';
 import { PaymentMethod } from '../../../domain/value-objects/payment-method';
 import { PaymentStatus } from '../../../domain/value-objects/payment-status';
+import { Order } from '../../../domain/entities/order';
 
 describe('GetOrderUseCase', () => {
   let useCase: GetOrderUseCase;
@@ -26,38 +27,67 @@ describe('GetOrderUseCase', () => {
       updateItemsInfo: jest.fn(),
       deleteById: jest.fn(),
       listOrders: jest.fn(),
-      cancelById: jest.fn(),
-    };
+      cancelOrder: jest.fn(),
+    } as any;
 
     orderId = 'OR0000001';
 
-    // Create a proper IOrder mock object
     mockOrder = {
       id: orderId,
       customerId: 'CU0000001',
+      paymentInfoId: 'PAY001',
+      shippingAddressId: 'ADDR001',
+
       items: [
         {
-          id: 'item_1',
+          id: 'item-1',
           productId: 'PR0000001',
-          productName: 'Test Product',
-          unitPrice: 100,
-          quantity: 2,
-          lineTotal: 200,
-        },
-        {
-          id: 'item_2',
-          productId: 'PR0000002',
-          productName: 'Another Product',
-          unitPrice: 50,
+          productName: 'Expensive Item',
           quantity: 1,
-          lineTotal: 50,
+          unitPrice: 10,
+          lineTotal: 10,
         },
       ],
+
+      customerInfo: {
+        customerId: 'CU0000001',
+        email: 'customer@example.com',
+        phone: '+1234567890',
+        firstName: 'John',
+        lastName: 'Doe',
+      },
+
+      paymentInfo: {
+        id: 'PAY001',
+        method: PaymentMethod.CREDIT_CARD,
+        amount: 15,
+        status: PaymentStatus.PENDING,
+        transactionId: 'TXN123456',
+        notes: 'Awaiting payment confirmation',
+      },
+
+      shippingAddress: {
+        id: 'ADDR001',
+        firstName: 'John',
+        lastName: 'Doe',
+        street: '123 Main Street',
+        city: 'New York',
+        state: 'NY',
+        postalCode: '10001',
+        country: 'DZ',
+        phone: '+1234567890',
+      },
+
+      subtotal: 10,
+      shippingCost: 5,
+      totalPrice: 15,
+
       status: OrderStatus.PENDING,
-      totalPrice: 250,
       createdAt: new Date('2025-01-01T10:00:00Z'),
-      updatedAt: new Date('2025-01-01T10:00:00Z'),
-    } as IOrder;
+      updatedAt: new Date('2025-01-02T10:00:00Z'),
+
+      customerNotes: 'Please ring doorbell upon delivery',
+    };
 
     useCase = new GetOrderUseCase(mockOrderRepository);
   });
@@ -69,7 +99,12 @@ describe('GetOrderUseCase', () => {
   describe('execute', () => {
     it('should return Success with order when order is found', async () => {
       // Arrange
-      mockOrderRepository.findById.mockResolvedValue(Result.success(mockOrder));
+      const domainOrder = Order.fromPrimitives(mockOrder);
+      const expectedPrimitives = domainOrder.toPrimitives();
+
+      mockOrderRepository.findById.mockResolvedValue(
+        Result.success(domainOrder),
+      );
 
       // Act
       const result = await useCase.execute(orderId);
@@ -77,12 +112,15 @@ describe('GetOrderUseCase', () => {
       // Assert
       expect(isSuccess(result)).toBe(true);
       if (isSuccess(result)) {
-        expect(result.value).toBe(mockOrder);
+        // Compare with the primitives produced by the domain object to avoid
+        // brittle differences introduced by normalizations inside Order
+        expect(result.value).toEqual(expectedPrimitives);
         expect(result.value.id).toBe(orderId);
-        expect(result.value.customerId).toBe('CU0000001');
-        expect(result.value.items).toHaveLength(2);
+        expect(result.value.customerId).toBe(expectedPrimitives.customerId);
         expect(result.value.status).toBe(OrderStatus.PENDING);
-        expect(result.value.totalPrice).toBe(250);
+        expect(result.value.items).toHaveLength(
+          expectedPrimitives.items.length,
+        );
       }
       expect(mockOrderRepository.findById).toHaveBeenCalledWith(orderId);
       expect(mockOrderRepository.findById).toHaveBeenCalledTimes(1);
@@ -167,16 +205,13 @@ describe('GetOrderUseCase', () => {
       expect(mockOrderRepository.findById).toHaveBeenCalledWith(nullId);
     });
 
-    it('should return order with correct properties', async () => {
-      // Arrange
-      const orderWithSpecificData: IOrder = {
-        // Basic identifiers
-        id: 'OR0000001',
+    it('should return order with correct properties (explicit sample)', async () => {
+      // Arrange - use a concrete sample and rely on domain normalization
+      const sample: IOrder = {
+        id: orderId,
         customerId: 'CU0000001',
         paymentInfoId: 'PAY001',
         shippingAddressId: 'ADDR001',
-
-        // Order items
         items: [
           {
             id: 'item-1',
@@ -187,8 +222,6 @@ describe('GetOrderUseCase', () => {
             lineTotal: 10,
           },
         ],
-
-        // Customer information
         customerInfo: {
           customerId: 'CU0000001',
           email: 'customer@example.com',
@@ -196,18 +229,14 @@ describe('GetOrderUseCase', () => {
           firstName: 'John',
           lastName: 'Doe',
         },
-
-        // Payment information
         paymentInfo: {
           id: 'PAY001',
           method: PaymentMethod.CREDIT_CARD,
-          amount: 100,
+          amount: 15,
           status: PaymentStatus.PENDING,
           transactionId: 'TXN123456',
           notes: 'Awaiting payment confirmation',
         },
-
-        // Shipping address
         shippingAddress: {
           id: 'ADDR001',
           firstName: 'John',
@@ -216,26 +245,21 @@ describe('GetOrderUseCase', () => {
           city: 'New York',
           state: 'NY',
           postalCode: '10001',
-          country: 'USA',
+          country: 'DZ',
           phone: '+1234567890',
         },
-
-        // Pricing
         subtotal: 10,
         shippingCost: 5,
-        totalPrice: 100,
-
-        // Order status and timestamps
+        totalPrice: 15,
         status: OrderStatus.PENDING,
         createdAt: new Date('2025-01-01T10:00:00Z'),
         updatedAt: new Date('2025-01-02T10:00:00Z'),
-
-        // Optional customer notes
         customerNotes: 'Please ring doorbell upon delivery',
       };
 
+      const domainOrder = Order.fromPrimitives(sample);
       mockOrderRepository.findById.mockResolvedValue(
-        Result.success(orderWithSpecificData),
+        Result.success(domainOrder),
       );
 
       // Act
@@ -245,30 +269,23 @@ describe('GetOrderUseCase', () => {
       expect(isSuccess(result)).toBe(true);
       if (isSuccess(result)) {
         const order = result.value;
+        const expected = domainOrder.toPrimitives();
+        expect(order).toEqual(expected);
+        // spot checks
         expect(order.id).toBe(orderId);
         expect(order.customerId).toBe('CU0000001');
-        expect(order.status).toBe(OrderStatus.PENDING);
-        expect(order.totalPrice).toBe(100);
-        expect(order.createdAt).toEqual(new Date('2025-01-01T10:00:00Z'));
-        expect(order.updatedAt).toEqual(new Date('2025-01-02T10:00:00Z'));
+        expect(order.totalPrice).toBe(expected.totalPrice);
         expect(order.items).toHaveLength(1);
         expect(order.items[0].productId).toBe('PR0000001');
-        expect(order.items[0].productName).toBe('Expensive Item');
-        expect(order.items[0].unitPrice).toBe(10);
-        expect(order.items[0].quantity).toBe(1);
       }
     });
 
-    it('should return order data correctly', async () => {
-      // Arrange - Create order with multiple items
-      const orderWithMultipleItems: IOrder = {
-        // Basic identifiers
-        id: 'OR0000001',
+    it('should return order data correctly for multiple items', async () => {
+      const multi: IOrder = {
+        id: orderId,
         customerId: 'CU0000001',
         paymentInfoId: 'PAY001',
         shippingAddressId: 'ADDR001',
-
-        // Order items
         items: [
           {
             id: 'item-1',
@@ -278,9 +295,15 @@ describe('GetOrderUseCase', () => {
             unitPrice: 10,
             lineTotal: 10,
           },
+          {
+            id: 'item-2',
+            productId: 'PR0000002',
+            productName: 'Another Item',
+            quantity: 2,
+            unitPrice: 20,
+            lineTotal: 40,
+          },
         ],
-
-        // Customer information
         customerInfo: {
           customerId: 'CU0000001',
           email: 'customer@example.com',
@@ -288,18 +311,14 @@ describe('GetOrderUseCase', () => {
           firstName: 'John',
           lastName: 'Doe',
         },
-
-        // Payment information
         paymentInfo: {
           id: 'PAY001',
           method: PaymentMethod.CREDIT_CARD,
-          amount: 100,
+          amount: 65,
           status: PaymentStatus.PENDING,
           transactionId: 'TXN123456',
           notes: 'Awaiting payment confirmation',
         },
-
-        // Shipping address
         shippingAddress: {
           id: 'ADDR001',
           firstName: 'John',
@@ -308,26 +327,21 @@ describe('GetOrderUseCase', () => {
           city: 'New York',
           state: 'NY',
           postalCode: '10001',
-          country: 'USA',
+          country: 'DZ',
           phone: '+1234567890',
         },
-
-        // Pricing
-        subtotal: 10,
-        shippingCost: 5,
-        totalPrice: 100,
-
-        // Order status and timestamps
+        subtotal: 50,
+        shippingCost: 15,
+        totalPrice: 65,
         status: OrderStatus.PENDING,
         createdAt: new Date('2025-01-01T10:00:00Z'),
         updatedAt: new Date('2025-01-01T10:00:00Z'),
-
-        // Optional customer notes
         customerNotes: 'Please ring doorbell upon delivery',
       };
 
+      const domainOrder = Order.fromPrimitives(multi);
       mockOrderRepository.findById.mockResolvedValue(
-        Result.success(orderWithMultipleItems),
+        Result.success(domainOrder),
       );
 
       // Act
@@ -337,24 +351,19 @@ describe('GetOrderUseCase', () => {
       expect(isSuccess(result)).toBe(true);
       if (isSuccess(result)) {
         const order = result.value;
-
-        // Test that we get the correct order data
-        expect(order.id).toBe(orderId);
-        expect(order.customerId).toBe('CU0000001');
-        expect(order.status).toBe(OrderStatus.PENDING);
-        expect(order.totalPrice).toBe(100);
-        expect(order.items).toHaveLength(1);
-        expect(order.items[0].productId).toBe('PR0000001');
+        const expected = domainOrder.toPrimitives();
+        expect(order).toEqual(expected);
+        expect(order.items).toHaveLength(2);
+        expect(order.totalPrice).toBe(expected.totalPrice);
       }
     });
   });
 
   describe('edge cases', () => {
     it('should handle repository returning different error types', async () => {
-      // Test with different repository error types
+      // Test with different repository error types (rejection)
       const customError = new Error('Custom repository error');
       customError.name = 'CustomRepositoryError';
-
       mockOrderRepository.findById.mockRejectedValue(customError);
 
       const result = await useCase.execute(orderId);
@@ -368,17 +377,14 @@ describe('GetOrderUseCase', () => {
     });
 
     it('should handle very long order IDs', async () => {
-      // Arrange
       const longId = 'OR' + '0'.repeat(1000);
       const repositoryError = ErrorFactory.RepositoryError(
         `Order with id ${longId} not found`,
       );
       mockOrderRepository.findById.mockResolvedValue(repositoryError);
 
-      // Act
       const result = await useCase.execute(longId);
 
-      // Assert
       expect(isFailure(result)).toBe(true);
       expect(mockOrderRepository.findById).toHaveBeenCalledWith(longId);
     });

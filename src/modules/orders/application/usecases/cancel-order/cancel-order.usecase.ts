@@ -5,6 +5,7 @@ import { Result } from '../../../../../core/domain/result';
 import { ErrorFactory } from '../../../../../core/errors/error.factory';
 import { OrderRepository } from '../../../domain/repositories/order-repository';
 import { IOrder } from '../../../domain/interfaces/order.interface';
+import { Order } from '../../../domain/entities/order';
 
 @Injectable()
 export class CancelOrderUseCase
@@ -13,9 +14,20 @@ export class CancelOrderUseCase
   constructor(private orderRepository: OrderRepository) {}
   async execute(id: string): Promise<Result<IOrder, UseCaseError>> {
     try {
-      const cancelRequest = await this.orderRepository.cancelById(id);
+      const requestedOrder = await this.orderRepository.findById(id);
+      if (requestedOrder.isFailure) return requestedOrder;
+
+      const order: Order = requestedOrder.value;
+      if (!order.isCancellable()) {
+        return ErrorFactory.UseCaseError('Order is not in a cancellable state');
+      }
+
+      order.cancel();
+
+      const cancelRequest = await this.orderRepository.cancelOrder(order);
       if (cancelRequest.isFailure) return cancelRequest;
-      return Result.success(cancelRequest.value);
+
+      return Result.success(order.toPrimitives());
     } catch (error) {
       return ErrorFactory.UseCaseError('Unexpected Usecase Error', error);
     }
