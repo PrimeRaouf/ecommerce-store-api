@@ -45,7 +45,7 @@ describe('CreateProductUseCase', () => {
       price: 35000,
       sku: 'CAR-001',
       stockQuantity: 10,
-    } as CreateProductDto;
+    };
   });
 
   describe('execute', () => {

@@ -5,39 +5,77 @@ import { Result } from '../../../../../core/domain/result';
 import { IOrder } from '../../../domain/interfaces/order.interface';
 import { UseCaseError } from '../../../../../core/errors/usecase.error';
 import { OrderStatus } from '../../../domain/value-objects/order-status';
+import { PaymentStatus } from '../../../domain/value-objects/payment-status';
+import { PaymentMethod } from '../../../domain/value-objects/payment-method';
 
 describe('CancelOrderController', () => {
   let controller: CancelOrderController;
   let mockUseCase: jest.Mocked<CancelOrderUseCase>;
 
-  const orderId = 'OR0000001';
+  const mockOrder: IOrder = {
+    // Basic identifiers
+    id: 'OR0001',
+    customerId: 'CUST1',
+    paymentInfoId: 'PAY001',
+    shippingAddressId: 'ADDR001',
 
-  const mockOrder = {
-    id: orderId,
-    customerId: 'CU0000001',
+    // Order items
     items: [
       {
-        id: 'item_1',
-        productId: 'PR0000001',
-        productName: 'Test Product',
-        unitPrice: 100,
-        quantity: 2,
-        lineTotal: 200,
-      },
-      {
-        id: 'item_2',
-        productId: 'PR0000002',
-        productName: 'Another Product',
-        unitPrice: 50,
+        id: 'item-1',
+        productId: 'PR1',
+        productName: 'P1',
         quantity: 1,
-        lineTotal: 50,
+        unitPrice: 10,
+        lineTotal: 10,
       },
     ],
-    status: OrderStatus.CANCELLED,
-    totalPrice: 250,
+
+    // Customer information
+    customerInfo: {
+      customerId: 'CUST1',
+      email: 'customer@example.com',
+      phone: '+1234567890',
+      firstName: 'John',
+      lastName: 'Doe',
+    },
+
+    // Payment information
+    paymentInfo: {
+      id: 'PAY001',
+      method: PaymentMethod.CREDIT_CARD,
+      amount: 15,
+      status: PaymentStatus.PENDING,
+      transactionId: 'TXN123456',
+      notes: 'Awaiting payment confirmation',
+    },
+
+    // Shipping address
+    shippingAddress: {
+      id: 'ADDR001',
+      firstName: 'John',
+      lastName: 'Doe',
+      street: '123 Main Street',
+      city: 'New York',
+      state: 'NY',
+      postalCode: '10001',
+      country: 'USA',
+      phone: '+1234567890',
+    },
+
+    // Pricing
+    subtotal: 10,
+    shippingCost: 5,
+    totalPrice: 15,
+
+    // Order status and timestamps
+    status: OrderStatus.PENDING,
     createdAt: new Date('2025-01-01T10:00:00Z'),
     updatedAt: new Date('2025-01-01T10:00:00Z'),
-  } as IOrder;
+
+    // Optional customer notes
+    customerNotes: 'Please ring doorbell upon delivery',
+  };
 
   beforeEach(() => {
     mockUseCase = {

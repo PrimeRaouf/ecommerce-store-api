@@ -1,5 +1,8 @@
 // src/modules/Orders/presentation/controllers/Create-Order.controller.spec.ts
 import { CreateOrderController } from './create-order.controller';
+import { CreateOrderUseCase } from '../../../application/usecases/create-order/create-order.usecase';
+import { OrderTestFactory } from '../../../testing/factories/order.test.factory';
+import { CreateOrderDtoTestFactory } from '../../../testing/factories/create-order-dto.test.factory';
 import {
   isFailure,
   isSuccess,
@@ -7,162 +10,73 @@ import {
 } from '../../../../../core/domain/result';
 import { ErrorFactory } from '../../../../../core/errors/error.factory';
 import { ControllerError } from '../../../../../core/errors/controller.error';
-import { CreateOrderUseCase } from '../../../application/usecases/create-order/create-order.usecase';
-import { CreateOrderDto } from '../../dto/create-order.dto';
-import { IOrder } from '../../../domain/interfaces/order.interface';
-import { OrderStatus } from '../../../domain/value-objects/order-status';
-import { PaymentMethod } from '../../../domain/value-objects/payment-method';
-import { PaymentStatus } from '../../../domain/value-objects/payment-status';
 
 describe('CreateOrderController', () => {
   let controller: CreateOrderController;
   let mockCreateOrderUseCase: jest.Mocked<CreateOrderUseCase>;
-  let mockOrder: IOrder;
-  let mockCreateOrderDto: CreateOrderDto;
 
   beforeEach(() => {
-    // Mock the CreateOrderUseCase
     mockCreateOrderUseCase = {
       execute: jest.fn(),
     } as unknown as jest.Mocked<CreateOrderUseCase>;
 
     controller = new CreateOrderController(mockCreateOrderUseCase);
-
-    mockOrder = {
-      // Basic identifiers
-      id: 'OR0001',
-      customerId: 'CUST1',
-      paymentInfoId: 'PAY001',
-      shippingAddressId: 'ADDR001',
-
-      // Order items
-      items: [
-        {
-          id: 'item-1',
-          productId: 'PR1',
-          productName: 'P1',
-          quantity: 1,
-          unitPrice: 10,
-          lineTotal: 10,
-        },
-      ],
-
-      // Customer information
-      customerInfo: {
-        customerId: 'CUST1',
-        email: 'customer@example.com',
-        phone: '+1234567890',
-        firstName: 'John',
-        lastName: 'Doe',
-      },
-
-      // Payment information
-      paymentInfo: {
-        id: 'PAY001',
-        method: PaymentMethod.CREDIT_CARD,
-        amount: 15,
-        status: PaymentStatus.PENDING,
-        transactionId: 'TXN123456',
-        notes: 'Awaiting payment confirmation',
-      },
-
-      // Shipping address
-      shippingAddress: {
-        id: 'ADDR001',
-        firstName: 'John',
-        lastName: 'Doe',
-        street: '123 Main Street',
-        city: 'New York',
-        state: 'NY',
-        postalCode: '10001',
-        country: 'USA',
-        phone: '+1234567890',
-      },
-
-      // Pricing
-      subtotal: 10,
-      shippingCost: 5,
-      totalPrice: 15,
-
-      // Order status and timestamps
-      status: OrderStatus.PENDING,
-      createdAt: new Date('2025-01-01T10:00:00Z'),
-      updatedAt: new Date('2025-01-01T10:00:00Z'),
-
-      // Optional customer notes
-      customerNotes: 'Please ring doorbell upon delivery',
-    };
-
-    mockCreateOrderDto = {
-      customerInfo: {
-        email: 'jane.smith@example.com',
-        firstName: 'Jane',
-        lastName: 'Smith',
-      },
-      items: [
-        {
-          productId: 'PR3',
-          quantity: 1,
-        },
-      ],
-      shippingAddress: {
-        firstName: 'Jane',
-        lastName: 'Smith',
-        street: '456 Oak Avenue',
-        city: 'Los Angeles',
-        state: 'CA',
-        postalCode: '90001',
-        country: 'US',
-      },
-      paymentInfo: {
-        method: PaymentMethod.CASH_ON_DELIVERY,
-      },
-    };
   });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe('handle', () => {
-    it('should return success if Order if created', async () => {
+    it('should return success if Order is created', async () => {
+      const createOrderDto = CreateOrderDtoTestFactory.createMockDto();
+      const mockOrder = OrderTestFactory.createMockOrder();
+
       mockCreateOrderUseCase.execute.mockResolvedValue(
         Result.success(mockOrder),
       );
 
-      const result = await controller.handle(mockCreateOrderDto);
+      const result = await controller.handle(createOrderDto);
 
       expect(isSuccess(result)).toBe(true);
       if (isSuccess(result)) {
         expect(result.value).toBe(mockOrder);
       }
       expect(mockCreateOrderUseCase.execute).toHaveBeenCalledWith(
-        mockCreateOrderDto,
+        createOrderDto,
       );
       expect(mockCreateOrderUseCase.execute).toHaveBeenCalledTimes(1);
     });
 
-    it('should rethrow Failure(ControllerError) if Order is not created', async () => {
+    it('should return Failure(ControllerError) if Order is not created', async () => {
+      const createOrderDto = CreateOrderDtoTestFactory.createMockDto();
+
       mockCreateOrderUseCase.execute.mockResolvedValue(
-        Result.failure(ErrorFactory.UseCaseError(`Failed to save Order`).error),
+        Result.failure(ErrorFactory.UseCaseError('Failed to save Order').error),
       );
 
-      const result = await controller.handle(mockCreateOrderDto);
+      const result = await controller.handle(createOrderDto);
 
       expect(isFailure(result)).toBe(true);
       if (isFailure(result)) {
         expect(result.error).toBeInstanceOf(ControllerError);
         expect(result.error.message).toBe('Controller failed to create Order');
-        expect(result.error.cause?.message).toBe(`Failed to save Order`);
+        expect(result.error.cause?.message).toBe('Failed to save Order');
       }
 
       expect(mockCreateOrderUseCase.execute).toHaveBeenCalledWith(
-        mockCreateOrderDto,
+        createOrderDto,
       );
       expect(mockCreateOrderUseCase.execute).toHaveBeenCalledTimes(1);
     });
 
     it('should return Failure(ControllerError) if usecase throws unexpected error', async () => {
+      const createOrderDto = CreateOrderDtoTestFactory.createMockDto();
       const error = new Error('Database connection failed');
 
       mockCreateOrderUseCase.execute.mockRejectedValue(error);
 
-      const result = await controller.handle(mockCreateOrderDto);
+      const result = await controller.handle(createOrderDto);
 
       expect(isFailure(result)).toBe(true);
       if (isFailure(result)) {
@@ -172,9 +86,82 @@ describe('CreateOrderController', () => {
       }
 
       expect(mockCreateOrderUseCase.execute).toHaveBeenCalledWith(
-        mockCreateOrderDto,
+        createOrderDto,
       );
       expect(mockCreateOrderUseCase.execute).toHaveBeenCalledTimes(1);
+    });
+
+    it('should create order with cash on delivery', async () => {
+      const createOrderDto =
+        CreateOrderDtoTestFactory.createCashOnDeliveryDto();
+      const mockOrder = OrderTestFactory.createCashOnDeliveryOrder();
+
+      mockCreateOrderUseCase.execute.mockResolvedValue(
+        Result.success(mockOrder),
+      );
+
+      const result = await controller.handle(createOrderDto);
+
+      expect(isSuccess(result)).toBe(true);
+      if (isSuccess(result)) {
+        expect(result.value.paymentInfo.method).toBe('cash_on_delivery');
+      }
+    });
+
+    it('should create order with credit card', async () => {
+      const createOrderDto = CreateOrderDtoTestFactory.createCreditCardDto();
+      const mockOrder = OrderTestFactory.createMockOrder();
+
+      mockCreateOrderUseCase.execute.mockResolvedValue(
+        Result.success(mockOrder),
+      );
+
+      const result = await controller.handle(createOrderDto);
+
+      expect(isSuccess(result)).toBe(true);
+      if (isSuccess(result)) {
+        expect(result.value.paymentInfo.method).toBe('credit_card');
+      }
+    });
+
+    it('should create order with multiple items', async () => {
+      const createOrderDto = CreateOrderDtoTestFactory.createMultiItemDto([
+        'PR1',
+        'PR2',
+        'PR3',
+      ]);
+      const mockOrder = OrderTestFactory.createMultiItemOrder(3);
+
+      mockCreateOrderUseCase.execute.mockResolvedValue(
+        Result.success(mockOrder),
+      );
+
+      const result = await controller.handle(createOrderDto);
+
+      expect(isSuccess(result)).toBe(true);
+      if (isSuccess(result)) {
+        expect(result.value.items).toHaveLength(3);
+      }
+    });
+
+    it('should create order with customer notes', async () => {
+      const notes = 'Please ring doorbell';
+      const createOrderDto =
+        CreateOrderDtoTestFactory.createWithNotesDto(notes);
+      const mockOrder = OrderTestFactory.createMockOrder({
+        customerNotes: notes,
+      });
+
+      mockCreateOrderUseCase.execute.mockResolvedValue(
+        Result.success(mockOrder),
+      );
+
+      const result = await controller.handle(createOrderDto);
+
+      expect(isSuccess(result)).toBe(true);
+      if (isSuccess(result)) {
+        expect(result.value.customerNotes).toBe(notes);
+      }
     });
   });
 });
