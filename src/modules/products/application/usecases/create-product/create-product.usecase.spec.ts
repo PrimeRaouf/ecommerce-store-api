@@ -1,97 +1,79 @@
-// src/modules/Products/application/usecases/GetProduct/get-Product.usecase.spec.ts
-import { Product } from '../../../domain/entities/product';
-import { ProductRepository } from '../../../domain/repositories/product-repository';
-import {
-  Result,
-  isFailure,
-  isSuccess,
-} from '../../../../../core/domain/result';
-import { ErrorFactory } from '../../../../../core/errors/error.factory';
-import { UseCaseError } from '../../../../../core/errors/usecase.error';
+// src/modules/Products/application/usecases/create-product/create-product.usecase.spec.ts
 import { CreateProductUseCase } from './create-product.usecase';
-import { CreateProductDto } from '../../../presentation/dto/create-product.dto';
+import { MockProductRepository } from '../../../testing/mocks/product-repository.mock';
+import { ProductTestFactory } from '../../../testing/factories/product.factory';
+import { CreateProductDtoFactory } from '../../../testing/factories/create-product-dto.factory';
+import { UseCaseError } from '../../../../../core/errors/usecase.error';
+import { ResultAssertionHelper } from '../../../../../testing';
 
 describe('CreateProductUseCase', () => {
   let useCase: CreateProductUseCase;
-  let mockProductRepository: jest.Mocked<ProductRepository>;
-  let product: Product;
-  let createProductDto: CreateProductDto;
+  let mockRepository: MockProductRepository;
 
   beforeEach(() => {
-    mockProductRepository = {
-      findById: jest.fn(),
-      save: jest.fn(),
-      update: jest.fn(),
-      findAll: jest.fn(),
-      deleteById: jest.fn(),
-    };
+    mockRepository = new MockProductRepository();
+    useCase = new CreateProductUseCase(mockRepository);
+  });
 
-    useCase = new CreateProductUseCase(mockProductRepository);
-
-    product = new Product({
-      id: 'PR0000001',
-      name: 'car',
-      description: 'A fast red sports car',
-      price: 35000,
-      sku: 'CAR-001',
-      stockQuantity: 10,
-      createdAt: new Date('2025-01-01T10:00:00Z'),
-      updatedAt: new Date('2025-08-13T15:00:00Z'),
-    });
-
-    createProductDto = {
-      name: 'car',
-      description: 'A fast red sports car',
-      price: 35000,
-      sku: 'CAR-001',
-      stockQuantity: 10,
-    };
+  afterEach(() => {
+    mockRepository.reset();
   });
 
   describe('execute', () => {
     it('should return Success if product is created', async () => {
-      mockProductRepository.save.mockResolvedValue(Result.success(product));
+      const createDto = CreateProductDtoFactory.createMockDto();
+      const product = ProductTestFactory.createMockProduct();
 
-      const result = await useCase.execute(createProductDto);
+      mockRepository.mockSuccessfulSave(product);
 
-      expect(isSuccess(result)).toBe(true);
-      if (isSuccess(result)) {
-        expect(result.value).toBe(product);
-      }
-      expect(mockProductRepository.save).toHaveBeenCalledWith(createProductDto);
-      expect(mockProductRepository.save).toHaveBeenCalledTimes(1);
+      const result = await useCase.execute(createDto);
+
+      ResultAssertionHelper.assertResultSuccess(result);
+      expect(result.value).toBe(product);
+      expect(mockRepository.save).toHaveBeenCalledWith(createDto);
+      expect(mockRepository.save).toHaveBeenCalledTimes(1);
     });
 
     it('should return Failure(UseCaseError) if product is not created', async () => {
-      const repoError = ErrorFactory.RepositoryError(`Failed to save product`);
-      mockProductRepository.save.mockResolvedValue(repoError);
+      const createDto = CreateProductDtoFactory.createMockDto();
 
-      const result = await useCase.execute(createProductDto);
+      mockRepository.mockSaveFailure('Failed to save product');
 
-      expect(isFailure(result)).toBe(true);
-      if (isFailure(result)) {
-        expect(result.error).toBeInstanceOf(UseCaseError);
-        expect(result.error.message).toBe(`Failed to save product`);
-      }
-      expect(mockProductRepository.save).toHaveBeenCalledWith(createProductDto);
-      expect(mockProductRepository.save).toHaveBeenCalledTimes(1);
+      const result = await useCase.execute(createDto);
+
+      ResultAssertionHelper.assertResultFailure(
+        result,
+        'Failed to save product',
+        UseCaseError,
+      );
     });
 
     it('should return Failure(UseCaseError) if repository throws unexpected error', async () => {
+      const createDto = CreateProductDtoFactory.createMockDto();
       const repoError = new Error('Database connection failed');
 
-      mockProductRepository.save.mockRejectedValue(repoError);
+      mockRepository.save.mockRejectedValue(repoError);
 
-      const result = await useCase.execute(createProductDto);
+      const result = await useCase.execute(createDto);
 
-      expect(isFailure(result)).toBe(true);
-      if (isFailure(result)) {
-        expect(result.error).toBeInstanceOf(UseCaseError);
-        expect(result.error.message).toBe('Unexpected use case error');
-        expect(result.error.cause).toBe(repoError);
-      }
-      expect(mockProductRepository.save).toHaveBeenCalledWith(createProductDto);
-      expect(mockProductRepository.save).toHaveBeenCalledTimes(1);
+      ResultAssertionHelper.assertResultFailure(
+        result,
+        'Unexpected use case error',
+        UseCaseError,
+        repoError,
+      );
+    });
+
+    it('should create expensive product', async () => {
+      const expensiveDto = CreateProductDtoFactory.createExpensiveProductDto();
+      const expensiveProduct = ProductTestFactory.createExpensiveProduct();
+
+      mockRepository.mockSuccessfulSave(expensiveProduct);
+
+      const result = await useCase.execute(expensiveDto);
+
+      ResultAssertionHelper.assertResultSuccess(result);
+      expect(result.value.price).toBe(35000);
     });
   });
 });

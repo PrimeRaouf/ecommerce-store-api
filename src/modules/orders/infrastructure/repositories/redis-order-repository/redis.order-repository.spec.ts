@@ -4,7 +4,6 @@ import { OrderRepository } from '../../../domain/repositories/order-repository';
 import { CacheService } from '../../../../../core/infrastructure/redis/cache/cache.service';
 import { Result } from '../../../../../core/domain/result';
 import { RepositoryError } from '../../../../../core/errors/repository.error';
-import { ErrorFactory } from '../../../../../core/errors/error.factory';
 import { Order_REDIS } from '../../../../../core/infrastructure/redis/constants/redis.constants';
 import { OrderStatus } from '../../../domain/value-objects/order-status';
 import { ListOrdersQueryDto } from '../../../presentation/dto/list-orders-query.dto';

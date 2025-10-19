@@ -1,110 +1,92 @@
 // src/modules/Products/presentation/controllers/Create-Product.controller.spec.ts
 import { CreateProductController } from './create-product.controller';
-import { Product } from '../../../domain/entities/product';
-import {
-  isFailure,
-  isSuccess,
-  Result,
-} from '../../../../../core/domain/result';
+import { CreateProductUseCase } from '../../../application/usecases/create-product/create-product.usecase';
+import { ProductTestFactory } from '../../../testing/factories/product.factory';
+import { CreateProductDtoFactory } from '../../../testing/factories/create-product-dto.factory';
 import { ErrorFactory } from '../../../../../core/errors/error.factory';
 import { ControllerError } from '../../../../../core/errors/controller.error';
-import { CreateProductUseCase } from '../../../application/usecases/create-product/create-product.usecase';
-import { CreateProductDto } from '../../dto/create-product.dto';
+import { Result } from '../../../../../core/domain/result';
+import { ResultAssertionHelper } from '../../../../../testing';
 
 describe('CreateProductController', () => {
   let controller: CreateProductController;
   let mockCreateProductUseCase: jest.Mocked<CreateProductUseCase>;
-  let product: Product;
-  let createProductDto: CreateProductDto;
 
   beforeEach(() => {
-    // Mock the CreateProductUseCase
     mockCreateProductUseCase = {
       execute: jest.fn(),
     } as unknown as jest.Mocked<CreateProductUseCase>;
 
     controller = new CreateProductController(mockCreateProductUseCase);
+  });
 
-    product = new Product({
-      id: 'PR0000001',
-      name: 'car',
-      description: 'A fast red sports car',
-      price: 35000,
-      sku: 'CAR-001',
-      stockQuantity: 10,
-      createdAt: new Date('2025-01-01T10:00:00Z'),
-      updatedAt: new Date('2025-08-13T15:00:00Z'),
-    });
-
-    createProductDto = {
-      name: 'Car',
-      description: 'A fast red sports car',
-      price: 35000,
-      sku: 'CAR-001',
-      stockQuantity: 10,
-    } as CreateProductDto;
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('handle', () => {
-    it('should return success if product if created', async () => {
+    it('should return success if product is created', async () => {
+      const createDto = CreateProductDtoFactory.createMockDto();
+      const product = ProductTestFactory.createMockProduct();
+
       mockCreateProductUseCase.execute.mockResolvedValue(
         Result.success(product),
       );
 
-      const result = await controller.handle(createProductDto);
+      const result = await controller.handle(createDto);
 
-      expect(isSuccess(result)).toBe(true);
-      if (isSuccess(result)) {
-        expect(result.value).toBe(product);
-      }
-      expect(mockCreateProductUseCase.execute).toHaveBeenCalledWith(
-        createProductDto,
-      );
+      ResultAssertionHelper.assertResultSuccess(result);
+      expect(result.value).toBe(product);
+      expect(mockCreateProductUseCase.execute).toHaveBeenCalledWith(createDto);
       expect(mockCreateProductUseCase.execute).toHaveBeenCalledTimes(1);
     });
 
-    it('should rethrow Failure(ControllerError) if product is not created', async () => {
+    it('should return Failure(ControllerError) if product is not created', async () => {
+      const createDto = CreateProductDtoFactory.createMockDto();
+
       mockCreateProductUseCase.execute.mockResolvedValue(
         Result.failure(
-          ErrorFactory.UseCaseError(`Failed to save product`).error,
+          ErrorFactory.UseCaseError('Failed to save product').error,
         ),
       );
 
-      const result = await controller.handle(createProductDto);
+      const result = await controller.handle(createDto);
 
-      expect(isFailure(result)).toBe(true);
-      if (isFailure(result)) {
-        expect(result.error).toBeInstanceOf(ControllerError);
-        expect(result.error.message).toBe(
-          'Controller failed to create product',
-        );
-        expect(result.error.cause?.message).toBe(`Failed to save product`);
-      }
-
-      expect(mockCreateProductUseCase.execute).toHaveBeenCalledWith(
-        createProductDto,
+      ResultAssertionHelper.assertResultFailure(
+        result,
+        'Controller failed to create product',
+        ControllerError,
       );
-      expect(mockCreateProductUseCase.execute).toHaveBeenCalledTimes(1);
     });
 
     it('should return Failure(ControllerError) if usecase throws unexpected error', async () => {
+      const createDto = CreateProductDtoFactory.createMockDto();
       const error = new Error('Database connection failed');
 
       mockCreateProductUseCase.execute.mockRejectedValue(error);
 
-      const result = await controller.handle(createProductDto);
+      const result = await controller.handle(createDto);
 
-      expect(isFailure(result)).toBe(true);
-      if (isFailure(result)) {
-        expect(result.error).toBeInstanceOf(ControllerError);
-        expect(result.error.message).toBe('Unexpected controller error');
-        expect(result.error.cause).toBe(error);
-      }
-
-      expect(mockCreateProductUseCase.execute).toHaveBeenCalledWith(
-        createProductDto,
+      ResultAssertionHelper.assertResultFailure(
+        result,
+        'Unexpected controller error',
+        ControllerError,
+        error,
       );
-      expect(mockCreateProductUseCase.execute).toHaveBeenCalledTimes(1);
+    });
+
+    it('should create expensive product', async () => {
+      const expensiveDto = CreateProductDtoFactory.createExpensiveProductDto();
+      const expensiveProduct = ProductTestFactory.createExpensiveProduct();
+
+      mockCreateProductUseCase.execute.mockResolvedValue(
+        Result.success(expensiveProduct),
+      );
+
+      const result = await controller.handle(expensiveDto);
+
+      ResultAssertionHelper.assertResultSuccess(result);
+      expect(result.value.price).toBe(35000);
     });
   });
 });

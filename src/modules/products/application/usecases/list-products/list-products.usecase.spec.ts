@@ -1,91 +1,77 @@
-// src/modules/Products/application/usecases/GetProduct/get-Product.usecase.spec.ts
-import { Product } from '../../../domain/entities/product';
-import { ProductRepository } from '../../../domain/repositories/product-repository';
-import {
-  Result,
-  isFailure,
-  isSuccess,
-} from '../../../../../core/domain/result';
-import { ErrorFactory } from '../../../../../core/errors/error.factory';
-import { UseCaseError } from '../../../../../core/errors/usecase.error';
+// src/modules/Products/application/usecases/list-products/list-products.usecase.spec.ts
 import { ListProductsUseCase } from './list-products.usecase';
+import { MockProductRepository } from '../../../testing/mocks/product-repository.mock';
+import { ProductTestFactory } from '../../../testing/factories/product.factory';
+import { UseCaseError } from '../../../../../core/errors/usecase.error';
+import { ResultAssertionHelper } from '../../../../../testing';
 
 describe('ListProductsUseCase', () => {
   let useCase: ListProductsUseCase;
-  let mockProductRepository: jest.Mocked<ProductRepository>;
-  let productId: string;
+  let mockRepository: MockProductRepository;
+
   beforeEach(() => {
-    mockProductRepository = {
-      findById: jest.fn(),
-      save: jest.fn(),
-      update: jest.fn(),
-      findAll: jest.fn(),
-      deleteById: jest.fn(),
-    };
-    productId = 'PR0000001';
-    useCase = new ListProductsUseCase(mockProductRepository);
+    mockRepository = new MockProductRepository();
+    useCase = new ListProductsUseCase(mockRepository);
+  });
+
+  afterEach(() => {
+    mockRepository.reset();
   });
 
   describe('execute', () => {
-    it('should return Success if product is found', async () => {
-      const expectedProducts = [
-        new Product({
-          id: productId,
-          name: 'Car',
-          description: 'A fast red sports car',
-          price: 35000,
-          sku: 'CAR-001',
-          stockQuantity: 10,
-          createdAt: new Date('2025-01-01T10:00:00Z'),
-          updatedAt: new Date('2025-08-13T15:00:00Z'),
-        }),
-      ];
+    it('should return Success if products are found', async () => {
+      const products = ProductTestFactory.createProductList(5);
 
-      mockProductRepository.findAll.mockResolvedValue(
-        Result.success(expectedProducts),
-      );
+      mockRepository.mockSuccessfulList(products);
 
       const result = await useCase.execute();
 
-      expect(isSuccess(result)).toBe(true);
-      if (isSuccess(result)) {
-        expect(result.value).toBe(expectedProducts);
-      }
-      expect(mockProductRepository.findAll).toHaveBeenCalledWith();
-      expect(mockProductRepository.findAll).toHaveBeenCalledTimes(1);
+      ResultAssertionHelper.assertResultSuccess(result);
+      expect(result.value).toHaveLength(5);
+      expect(mockRepository.findAll).toHaveBeenCalledWith();
+      expect(mockRepository.findAll).toHaveBeenCalledTimes(1);
     });
 
     it('should return Failure(UseCaseError) if no product is found', async () => {
-      mockProductRepository.findAll.mockResolvedValue(
-        ErrorFactory.RepositoryError(`Products not found`),
-      );
+      mockRepository.mockListFailure('Products not found');
 
       const result = await useCase.execute();
 
-      expect(isFailure(result)).toBe(true);
-      if (isFailure(result)) {
-        expect(result.error).toBeInstanceOf(UseCaseError);
-        expect(result.error.message).toBe(`Products not found`);
-      }
-      expect(mockProductRepository.findAll).toHaveBeenCalledWith();
-      expect(mockProductRepository.findAll).toHaveBeenCalledTimes(1);
+      ResultAssertionHelper.assertResultFailure(
+        result,
+        'Products not found',
+        UseCaseError,
+      );
     });
 
     it('should return Failure(UseCaseError) if repository throws unexpected error', async () => {
       const repoError = new Error('Database connection failed');
 
-      mockProductRepository.findAll.mockRejectedValue(repoError);
+      mockRepository.findAll.mockRejectedValue(repoError);
 
       const result = await useCase.execute();
 
-      expect(isFailure(result)).toBe(true);
-      if (isFailure(result)) {
-        expect(result.error).toBeInstanceOf(UseCaseError);
-        expect(result.error.message).toBe('Unexpected use case error');
-        expect(result.error.cause).toBe(repoError);
-      }
-      expect(mockProductRepository.findAll).toHaveBeenCalledWith();
-      expect(mockProductRepository.findAll).toHaveBeenCalledTimes(1);
+      ResultAssertionHelper.assertResultFailure(
+        result,
+        'Unexpected use case error',
+        UseCaseError,
+        repoError,
+      );
+    });
+
+    it('should return mixed product types', async () => {
+      const products = [
+        ProductTestFactory.createInStockProduct(),
+        ProductTestFactory.createLowStockProduct(),
+        ProductTestFactory.createOutOfStockProduct(),
+      ];
+
+      mockRepository.mockSuccessfulList(products);
+
+      const result = await useCase.execute();
+
+      ResultAssertionHelper.assertResultSuccess(result);
+      expect(result.value).toHaveLength(3);
     });
   });
 });
