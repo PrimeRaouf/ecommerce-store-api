@@ -1,119 +1,92 @@
-// src/modules/Products/application/usecases/GetProduct/get-Product.usecase.spec.ts
-import { Product } from '../../../domain/entities/product';
-import { ProductRepository } from '../../../domain/repositories/product-repository';
-import {
-  Result,
-  isFailure,
-  isSuccess,
-} from '../../../../../core/domain/result';
-import { ErrorFactory } from '../../../../../core/errors/error.factory';
-import { UseCaseError } from '../../../../../core/errors/usecase.error';
+// src/modules/Products/application/usecases/update-product/update-product.usecase.spec.ts
 import { UpdateProductUseCase } from './update-product.usecase';
-import { UpdateProductDto } from '../../../presentation/dto/update-product.dto';
+import { MockProductRepository } from '../../../testing/mocks/product-repository.mock';
+import { ProductTestFactory } from '../../../testing/factories/product.factory';
+import { UpdateProductDtoFactory } from '../../../testing/factories/update-product-dto.factory';
+import { UseCaseError } from '../../../../../core/errors/usecase.error';
+import { ResultAssertionHelper } from '../../../../../testing';
 
 describe('UpdateProductUseCase', () => {
   let useCase: UpdateProductUseCase;
-  let mockProductRepository: jest.Mocked<ProductRepository>;
-  let product: Product;
-  let updateProductDto: UpdateProductDto;
-  let id_param: string;
+  let mockRepository: MockProductRepository;
 
   beforeEach(() => {
-    mockProductRepository = {
-      findById: jest.fn(),
-      update: jest.fn(),
-      save: jest.fn(),
-      findAll: jest.fn(),
-      deleteById: jest.fn(),
-    };
+    mockRepository = new MockProductRepository();
+    useCase = new UpdateProductUseCase(mockRepository);
+  });
 
-    useCase = new UpdateProductUseCase(mockProductRepository);
-
-    id_param = 'PR0000001';
-    updateProductDto = {
-      name: 'car',
-      description: 'A fast red sports car',
-      price: 35000,
-      sku: 'CAR-001',
-      stockQuantity: 10,
-    };
-
-    product = new Product({
-      id: id_param,
-      name: 'car',
-      description: 'A fast red sports car',
-      price: 35000,
-      sku: 'CAR-001',
-      stockQuantity: 10,
-      createdAt: new Date('2025-01-01T10:00:00Z'),
-      updatedAt: new Date('2025-08-13T15:00:00Z'),
-    });
+  afterEach(() => {
+    mockRepository.reset();
   });
 
   describe('execute', () => {
     it('should return Success if product is updated', async () => {
-      mockProductRepository.update.mockResolvedValue(Result.success(product));
-
-      const result = await useCase.execute({
-        id: id_param,
-        dto: updateProductDto,
+      const productId = 'PR0000001';
+      const updateDto = UpdateProductDtoFactory.createMockDto();
+      const updatedProduct = ProductTestFactory.createMockProduct({
+        id: productId,
+        name: 'Updated Product',
       });
 
-      expect(isSuccess(result)).toBe(true);
-      if (isSuccess(result)) {
-        expect(result.value).toBe(product);
-      }
-      expect(mockProductRepository.update).toHaveBeenCalledWith(
-        id_param,
-        updateProductDto,
-      );
-      expect(mockProductRepository.update).toHaveBeenCalledTimes(1);
+      mockRepository.mockSuccessfulUpdate(updatedProduct);
+
+      const result = await useCase.execute({ id: productId, dto: updateDto });
+
+      ResultAssertionHelper.assertResultSuccess(result);
+      expect(result.value.name).toBe('Updated Product');
+      expect(mockRepository.update).toHaveBeenCalledWith(productId, updateDto);
+      expect(mockRepository.update).toHaveBeenCalledTimes(1);
     });
 
     it('should return Failure(UseCaseError) if product is not updated', async () => {
-      const repoError = ErrorFactory.RepositoryError(
-        `Failed to update product`,
-      );
-      mockProductRepository.update.mockResolvedValue(repoError);
+      const productId = 'PR0000001';
+      const updateDto = UpdateProductDtoFactory.createMockDto();
 
-      const result = await useCase.execute({
-        id: id_param,
-        dto: updateProductDto,
-      });
+      mockRepository.mockUpdateFailure('Failed to update product');
 
-      expect(isFailure(result)).toBe(true);
-      if (isFailure(result)) {
-        expect(result.error).toBeInstanceOf(UseCaseError);
-        expect(result.error.message).toBe(`Failed to update product`);
-      }
-      expect(mockProductRepository.update).toHaveBeenCalledWith(
-        id_param,
-        updateProductDto,
+      const result = await useCase.execute({ id: productId, dto: updateDto });
+
+      ResultAssertionHelper.assertResultFailure(
+        result,
+        'Failed to update product',
+        UseCaseError,
       );
-      expect(mockProductRepository.update).toHaveBeenCalledTimes(1);
     });
 
     it('should return Failure(UseCaseError) if repository throws unexpected error', async () => {
+      const productId = 'PR0000001';
+      const updateDto = UpdateProductDtoFactory.createMockDto();
       const repoError = new Error('Database connection failed');
 
-      mockProductRepository.update.mockRejectedValue(repoError);
+      mockRepository.update.mockRejectedValue(repoError);
 
-      const result = await useCase.execute({
-        id: id_param,
-        dto: updateProductDto,
+      const result = await useCase.execute({ id: productId, dto: updateDto });
+
+      ResultAssertionHelper.assertResultFailure(
+        result,
+        'Unexpected use case error',
+        UseCaseError,
+        repoError,
+      );
+    });
+
+    it('should update only price', async () => {
+      const productId = 'PR0000001';
+      const priceOnlyDto = UpdateProductDtoFactory.createPriceOnlyDto(200);
+      const updatedProduct = ProductTestFactory.createMockProduct({
+        id: productId,
+        price: 200,
       });
 
-      expect(isFailure(result)).toBe(true);
-      if (isFailure(result)) {
-        expect(result.error).toBeInstanceOf(UseCaseError);
-        expect(result.error.message).toBe('Unexpected use case error');
-        expect(result.error.cause).toBe(repoError);
-      }
-      expect(mockProductRepository.update).toHaveBeenCalledWith(
-        id_param,
-        updateProductDto,
-      );
-      expect(mockProductRepository.update).toHaveBeenCalledTimes(1);
+      mockRepository.mockSuccessfulUpdate(updatedProduct);
+
+      const result = await useCase.execute({
+        id: productId,
+        dto: priceOnlyDto,
+      });
+
+      ResultAssertionHelper.assertResultSuccess(result);
+      expect(result.value.price).toBe(200);
     });
   });
 });

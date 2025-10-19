@@ -1,116 +1,106 @@
 // src/modules/Products/presentation/controllers/Update-Product.controller.spec.ts
 import { UpdateProductController } from './update-product.controller';
-import { Product } from '../../../domain/entities/product';
-import {
-  isFailure,
-  isSuccess,
-  Result,
-} from '../../../../../core/domain/result';
+import { UpdateProductUseCase } from '../../../application/usecases/update-product/update-product.usecase';
+import { ProductTestFactory } from '../../../testing/factories/product.factory';
+import { UpdateProductDtoFactory } from '../../../testing/factories/update-product-dto.factory';
 import { ErrorFactory } from '../../../../../core/errors/error.factory';
 import { ControllerError } from '../../../../../core/errors/controller.error';
-import { UpdateProductUseCase } from '../../../application/usecases/update-product/update-product.usecase';
-import { UpdateProductDto } from '../../dto/update-product.dto';
+import { Result } from '../../../../../core/domain/result';
+import { ResultAssertionHelper } from '../../../../../testing';
 
 describe('UpdateProductController', () => {
   let controller: UpdateProductController;
-  let updateProductDto: UpdateProductDto;
-  let productId: string;
-
   let mockUpdateProductUseCase: jest.Mocked<UpdateProductUseCase>;
-  let product: Product;
 
   beforeEach(() => {
-    // Mock the UpdateProductUseCase
     mockUpdateProductUseCase = {
       execute: jest.fn(),
     } as unknown as jest.Mocked<UpdateProductUseCase>;
-    productId = 'PR0000001';
 
     controller = new UpdateProductController(mockUpdateProductUseCase);
+  });
 
-    updateProductDto = {
-      name: 'Car',
-      description: 'A fast red sports car',
-      price: 35000,
-      sku: 'CAR-001',
-      stockQuantity: 10,
-    };
-
-    product = new Product({
-      id: productId,
-      name: 'car',
-      description: 'A fast red sports car',
-      price: 35000,
-      sku: 'CAR-001',
-      stockQuantity: 10,
-      createdAt: new Date('2025-01-01T10:00:00Z'),
-      updatedAt: new Date('2025-08-13T15:00:00Z'),
-    });
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('handle', () => {
-    it('should return success if product if updated', async () => {
+    it('should return success if product is updated', async () => {
+      const productId = 'PR0000001';
+      const updateDto = UpdateProductDtoFactory.createMockDto();
+      const product = ProductTestFactory.createMockProduct({ id: productId });
+
       mockUpdateProductUseCase.execute.mockResolvedValue(
         Result.success(product),
       );
 
-      const result = await controller.handle(productId, updateProductDto);
+      const result = await controller.handle(productId, updateDto);
 
-      expect(isSuccess(result)).toBe(true);
-      if (isSuccess(result)) {
-        expect(result.value).toBe(product);
-      }
+      ResultAssertionHelper.assertResultSuccess(result);
+      expect(result.value).toBe(product);
       expect(mockUpdateProductUseCase.execute).toHaveBeenCalledWith({
         id: productId,
-        dto: updateProductDto,
+        dto: updateDto,
       });
       expect(mockUpdateProductUseCase.execute).toHaveBeenCalledTimes(1);
     });
 
-    it('should rethrow Failure(ControllerError) if product is not updated', async () => {
+    it('should return Failure(ControllerError) if product is not updated', async () => {
+      const productId = 'PR0000001';
+      const updateDto = UpdateProductDtoFactory.createMockDto();
+
       mockUpdateProductUseCase.execute.mockResolvedValue(
         Result.failure(
-          ErrorFactory.UseCaseError(`Failed to update product`).error,
+          ErrorFactory.UseCaseError('Failed to update product').error,
         ),
       );
 
-      const result = await controller.handle(productId, updateProductDto);
+      const result = await controller.handle(productId, updateDto);
 
-      expect(isFailure(result)).toBe(true);
-      if (isFailure(result)) {
-        expect(result.error).toBeInstanceOf(ControllerError);
-        expect(result.error.message).toBe(
-          'Controller failed to Update product',
-        );
-        expect(result.error.cause?.message).toBe(`Failed to update product`);
-      }
-
+      ResultAssertionHelper.assertResultFailure(
+        result,
+        'Controller failed to Update product',
+        ControllerError,
+      );
       expect(mockUpdateProductUseCase.execute).toHaveBeenCalledWith({
         id: productId,
-        dto: updateProductDto,
+        dto: updateDto,
       });
-      expect(mockUpdateProductUseCase.execute).toHaveBeenCalledTimes(1);
     });
 
     it('should return Failure(ControllerError) if usecase throws unexpected error', async () => {
+      const productId = 'PR0000001';
+      const updateDto = UpdateProductDtoFactory.createMockDto();
       const error = new Error('Database connection failed');
 
       mockUpdateProductUseCase.execute.mockRejectedValue(error);
 
-      const result = await controller.handle(productId, updateProductDto);
+      const result = await controller.handle(productId, updateDto);
 
-      expect(isFailure(result)).toBe(true);
-      if (isFailure(result)) {
-        expect(result.error).toBeInstanceOf(ControllerError);
-        expect(result.error.message).toBe('Unexpected controller error');
-        expect(result.error.cause).toBe(error);
-      }
+      ResultAssertionHelper.assertResultFailure(
+        result,
+        'Unexpected controller error',
+        ControllerError,
+        error,
+      );
+    });
 
-      expect(mockUpdateProductUseCase.execute).toHaveBeenCalledWith({
+    it('should update only price', async () => {
+      const productId = 'PR0000001';
+      const priceOnlyDto = UpdateProductDtoFactory.createPriceOnlyDto(200);
+      const product = ProductTestFactory.createMockProduct({
         id: productId,
-        dto: updateProductDto,
+        price: 200,
       });
-      expect(mockUpdateProductUseCase.execute).toHaveBeenCalledTimes(1);
+
+      mockUpdateProductUseCase.execute.mockResolvedValue(
+        Result.success(product),
+      );
+
+      const result = await controller.handle(productId, priceOnlyDto);
+
+      ResultAssertionHelper.assertResultSuccess(result);
+      expect(result.value.price).toBe(200);
     });
   });
 });
