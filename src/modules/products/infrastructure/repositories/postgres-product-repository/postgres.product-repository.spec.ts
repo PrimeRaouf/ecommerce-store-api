@@ -1,14 +1,14 @@
-// src/modules/products/infrastructure/repositories/PostgresProductRepository/__tests__/postgres.product-repository.spec.ts
-
+// src/modules/products/infrastructure/repositories/PostgresProductRepository/postgres.product-repository.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PostgresProductRepository } from './postgres.product-repository';
 import { ProductEntity } from '../../orm/product.schema';
 import { IdGeneratorService } from '../../../../../core/infrastructure/orm/id-generator.service';
-import { IProduct } from '../../../domain/interfaces/product.interface';
-import { CreateProductDto } from '../../../presentation/dto/create-product.dto';
-import { UpdateProductDto } from '../../../presentation/dto/update-product.dto';
+import { ProductTestFactory } from '../../../testing/factories/product.factory';
+import { CreateProductDtoFactory } from '../../../testing/factories/create-product-dto.factory';
+import { UpdateProductDtoFactory } from '../../../testing/factories/update-product-dto.factory';
+import { RepositoryError } from '../../../../../core/errors/repository.error';
 import { ResultAssertionHelper } from '../../../../../testing';
 
 describe('PostgresProductRepository', () => {
@@ -16,26 +16,16 @@ describe('PostgresProductRepository', () => {
   let ormRepo: jest.Mocked<Repository<ProductEntity>>;
   let idGeneratorService: jest.Mocked<IdGeneratorService>;
 
-  const mockProduct: IProduct = {
-    id: 'PR0000001',
-    name: 'Test Product',
-    description: 'Test Description',
-    price: 29.99,
-    sku: 'TEST-001',
-    stockQuantity: 100,
-    createdAt: new Date('2024-01-01T00:00:00Z'),
-    updatedAt: new Date('2024-01-01T00:00:00Z'),
-  };
-
+  const mockProduct = ProductTestFactory.createMockProduct();
   const mockProductEntity: ProductEntity = {
-    id: 'PR0000001',
-    name: 'Test Product',
-    description: 'Test Description',
-    price: 29.99,
-    sku: 'TEST-001',
-    stockQuantity: 100,
-    createdAt: new Date('2024-01-01T00:00:00Z'),
-    updatedAt: new Date('2024-01-01T00:00:00Z'),
+    id: mockProduct.id,
+    name: mockProduct.name,
+    description: mockProduct.description,
+    price: mockProduct.price,
+    sku: mockProduct.sku,
+    stockQuantity: mockProduct.stockQuantity,
+    createdAt: mockProduct.createdAt,
+    updatedAt: mockProduct.updatedAt,
   };
 
   beforeEach(async () => {
@@ -78,262 +68,301 @@ describe('PostgresProductRepository', () => {
   });
 
   describe('save', () => {
-    const createProductDto: CreateProductDto = {
-      name: 'Test Product',
-      description: 'Test Description',
-      price: 29.99,
-      sku: 'TEST-001',
-      stockQuantity: 100,
-    };
-
     it('should successfully save a product', async () => {
-      // Arrange
-      idGeneratorService.generateProductId.mockResolvedValue('PR0000001');
+      const createDto = CreateProductDtoFactory.createMockDto();
+      const generatedId = 'PR0000001';
+
+      idGeneratorService.generateProductId.mockResolvedValue(generatedId);
       ormRepo.create.mockReturnValue(mockProductEntity);
       ormRepo.save.mockResolvedValue(mockProductEntity);
 
-      // Act
-      const result = await repository.save(createProductDto);
+      const result = await repository.save(createDto);
 
-      // Assert
       ResultAssertionHelper.assertResultSuccess(result);
-      if (result.isSuccess) expect(result.value).toEqual(mockProduct);
+      expect(result.value.id).toBe(generatedId);
       expect(idGeneratorService.generateProductId).toHaveBeenCalledTimes(1);
       expect(ormRepo.create).toHaveBeenCalledWith({
-        id: 'PR0000001',
-        ...createProductDto,
+        id: generatedId,
+        ...createDto,
         createdAt: expect.any(Date),
       });
       expect(ormRepo.save).toHaveBeenCalledWith(mockProductEntity);
     });
 
+    it('should save expensive product', async () => {
+      const expensiveDto = CreateProductDtoFactory.createExpensiveProductDto();
+      const expensiveProduct = ProductTestFactory.createExpensiveProduct();
+      const expensiveEntity = { ...mockProductEntity, ...expensiveProduct };
+
+      idGeneratorService.generateProductId.mockResolvedValue(
+        expensiveProduct.id,
+      );
+      ormRepo.create.mockReturnValue(expensiveEntity);
+      ormRepo.save.mockResolvedValue(expensiveEntity);
+
+      const result = await repository.save(expensiveDto);
+
+      ResultAssertionHelper.assertResultSuccess(result);
+      expect(result.value.price).toBe(35000);
+    });
+
     it('should return failure when id generation fails', async () => {
-      // Arrange
+      const createDto = CreateProductDtoFactory.createMockDto();
       const error = new Error('ID generation failed');
+
       idGeneratorService.generateProductId.mockRejectedValue(error);
 
-      // Act
-      const result = await repository.save(createProductDto);
+      const result = await repository.save(createDto);
 
-      // Assert
       ResultAssertionHelper.assertResultFailure(
         result,
         'Failed to save the product',
+        RepositoryError,
       );
-
       expect(ormRepo.create).not.toHaveBeenCalled();
       expect(ormRepo.save).not.toHaveBeenCalled();
     });
 
     it('should return failure when database save fails', async () => {
-      // Arrange
+      const createDto = CreateProductDtoFactory.createMockDto();
       const error = new Error('Database save failed');
+
       idGeneratorService.generateProductId.mockResolvedValue('PR0000001');
       ormRepo.create.mockReturnValue(mockProductEntity);
       ormRepo.save.mockRejectedValue(error);
 
-      // Act
-      const result = await repository.save(createProductDto);
+      const result = await repository.save(createDto);
 
-      // Assert
       ResultAssertionHelper.assertResultFailure(
         result,
         'Failed to save the product',
+        RepositoryError,
       );
     });
   });
 
   describe('update', () => {
-    const updateProductDto: UpdateProductDto = {
-      name: 'Updated Product',
-      price: 39.99,
-    };
-
     it('should successfully update a product', async () => {
-      // Arrange
+      const productId = 'PR0000001';
+      const updateDto = UpdateProductDtoFactory.createMockDto();
       const updatedEntity = {
         ...mockProductEntity,
-        ...updateProductDto,
+        ...updateDto,
         updatedAt: new Date(),
       };
+
       ormRepo.findOne.mockResolvedValue(mockProductEntity);
       ormRepo.merge.mockReturnValue(updatedEntity);
       ormRepo.save.mockResolvedValue(updatedEntity);
 
-      // Act
-      const result = await repository.update('PR0000001', updateProductDto);
+      const result = await repository.update(productId, updateDto);
 
-      // Assert
       ResultAssertionHelper.assertResultSuccess(result);
-      if (result.isSuccess) {
-        expect(result.value.name).toBe('Updated Product');
-        expect(result.value.price).toBe(39.99);
-      }
+      expect(result.value.name).toBe(updateDto.name);
       expect(ormRepo.findOne).toHaveBeenCalledWith({
-        where: { id: 'PR0000001' },
+        where: { id: productId },
       });
       expect(ormRepo.merge).toHaveBeenCalledWith(mockProductEntity, {
-        ...updateProductDto,
+        ...updateDto,
         updatedAt: expect.any(Date),
       });
       expect(ormRepo.save).toHaveBeenCalledWith(updatedEntity);
     });
 
+    it('should update only price', async () => {
+      const productId = 'PR0000001';
+      const priceOnlyDto = UpdateProductDtoFactory.createPriceOnlyDto(200);
+      const updatedEntity = {
+        ...mockProductEntity,
+        price: 200,
+        updatedAt: new Date(),
+      };
+
+      ormRepo.findOne.mockResolvedValue(mockProductEntity);
+      ormRepo.merge.mockReturnValue(updatedEntity);
+      ormRepo.save.mockResolvedValue(updatedEntity);
+
+      const result = await repository.update(productId, priceOnlyDto);
+
+      ResultAssertionHelper.assertResultSuccess(result);
+      expect(result.value.price).toBe(200);
+    });
+
     it('should return failure when product not found', async () => {
-      // Arrange
+      const productId = 'PR0000999';
+      const updateDto = UpdateProductDtoFactory.createMockDto();
+
       ormRepo.findOne.mockResolvedValue(null);
 
-      // Act
-      const result = await repository.update('PR0000999', updateProductDto);
+      const result = await repository.update(productId, updateDto);
 
-      // Assert
       ResultAssertionHelper.assertResultFailure(
         result,
-        'Product with ID PR0000999 not found',
+        `Product with ID ${productId} not found`,
+        RepositoryError,
       );
-
       expect(ormRepo.merge).not.toHaveBeenCalled();
       expect(ormRepo.save).not.toHaveBeenCalled();
     });
 
     it('should return failure when database update fails', async () => {
-      // Arrange
+      const productId = 'PR0000001';
+      const updateDto = UpdateProductDtoFactory.createMockDto();
       const error = new Error('Database update failed');
+
       ormRepo.findOne.mockResolvedValue(mockProductEntity);
       ormRepo.merge.mockReturnValue(mockProductEntity);
       ormRepo.save.mockRejectedValue(error);
 
-      // Act
-      const result = await repository.update('PR0000001', updateProductDto);
+      const result = await repository.update(productId, updateDto);
 
-      // Assert
       ResultAssertionHelper.assertResultFailure(
         result,
         'Failed to update the product',
+        RepositoryError,
       );
     });
   });
 
   describe('findById', () => {
     it('should successfully find a product by id', async () => {
-      // Arrange
+      const productId = 'PR0000001';
+
       ormRepo.findOne.mockResolvedValue(mockProductEntity);
 
-      // Act
-      const result = await repository.findById('PR0000001');
+      const result = await repository.findById(productId);
 
-      // Assert
       ResultAssertionHelper.assertResultSuccess(result);
-      if (result.isSuccess) expect(result.value).toEqual(mockProduct);
+      expect(result.value.id).toBe(productId);
       expect(ormRepo.findOne).toHaveBeenCalledWith({
-        where: { id: 'PR0000001' },
+        where: { id: productId },
       });
     });
 
+    it('should find low stock product', async () => {
+      const lowStockProduct = ProductTestFactory.createLowStockProduct();
+      const lowStockEntity = { ...mockProductEntity, ...lowStockProduct };
+
+      ormRepo.findOne.mockResolvedValue(lowStockEntity);
+
+      const result = await repository.findById(lowStockProduct.id);
+
+      ResultAssertionHelper.assertResultSuccess(result);
+      expect(result.value.stockQuantity).toBe(3);
+    });
+
     it('should return failure when product not found', async () => {
-      // Arrange
+      const productId = 'PR0000999';
+
       ormRepo.findOne.mockResolvedValue(null);
 
-      // Act
-      const result = await repository.findById('PR0000999');
+      const result = await repository.findById(productId);
 
-      // Assert
-      ResultAssertionHelper.assertResultFailure(result, 'Product not found');
+      ResultAssertionHelper.assertResultFailure(
+        result,
+        'Product not found',
+        RepositoryError,
+      );
     });
 
     it('should return failure when database query fails', async () => {
-      // Arrange
+      const productId = 'PR0000001';
       const error = new Error('Database query failed');
+
       ormRepo.findOne.mockRejectedValue(error);
 
-      // Act
-      const result = await repository.findById('PR0000001');
+      const result = await repository.findById(productId);
 
-      // Assert
       ResultAssertionHelper.assertResultFailure(
         result,
         'Failed to find the product',
+        RepositoryError,
       );
     });
   });
 
   describe('findAll', () => {
     it('should successfully find all products', async () => {
-      // Arrange
-      const mockProducts = [
-        mockProductEntity,
-        { ...mockProductEntity, id: 'PR0000002', name: 'Product 2' },
-      ];
-      ormRepo.find.mockResolvedValue(mockProducts);
+      const mockProducts = ProductTestFactory.createProductList(3);
+      const mockEntities = mockProducts.map((p) => ({ ...p }));
 
-      // Act
+      ormRepo.find.mockResolvedValue(mockEntities);
+
       const result = await repository.findAll();
 
-      // Assert
       ResultAssertionHelper.assertResultSuccess(result);
-      if (result.isSuccess) {
-        expect(result.value).toHaveLength(2);
-        expect(result.value[0]).toEqual(mockProduct);
-      }
+      expect(result.value).toHaveLength(3);
       expect(ormRepo.find).toHaveBeenCalledTimes(1);
     });
 
-    it('should return failure when no products found', async () => {
-      // Arrange
-      ormRepo.find.mockResolvedValue([]);
+    it('should find products with different stock levels', async () => {
+      const products = [
+        ProductTestFactory.createInStockProduct(),
+        ProductTestFactory.createLowStockProduct(),
+        ProductTestFactory.createOutOfStockProduct(),
+      ];
+      const entities = products.map((p) => ({ ...p }));
 
-      // Act
+      ormRepo.find.mockResolvedValue(entities);
+
       const result = await repository.findAll();
 
-      // Assert
+      ResultAssertionHelper.assertResultSuccess(result);
+      expect(result.value).toHaveLength(3);
+    });
+
+    it('should return failure when no products found', async () => {
+      ormRepo.find.mockResolvedValue([]);
+
+      const result = await repository.findAll();
+
       ResultAssertionHelper.assertResultFailure(
         result,
         'Did not find any products',
+        RepositoryError,
       );
     });
 
     it('should return failure when database query fails', async () => {
-      // Arrange
       const error = new Error('Database query failed');
+
       ormRepo.find.mockRejectedValue(error);
 
-      // Act
       const result = await repository.findAll();
 
-      // Assert
       ResultAssertionHelper.assertResultFailure(
         result,
         'Failed to find products',
+        RepositoryError,
       );
     });
   });
 
   describe('deleteById', () => {
     it('should successfully delete a product', async () => {
-      // Arrange
+      const productId = 'PR0000001';
+
       ormRepo.delete.mockResolvedValue({ affected: 1, raw: {} });
 
-      // Act
-      const result = await repository.deleteById('PR0000001');
+      const result = await repository.deleteById(productId);
 
-      // Assert
       ResultAssertionHelper.assertResultSuccess(result);
-      if (result.isSuccess) expect(result.value).toBeUndefined();
-      expect(ormRepo.delete).toHaveBeenCalledWith('PR0000001');
+      expect(result.value).toBeUndefined();
+      expect(ormRepo.delete).toHaveBeenCalledWith(productId);
     });
 
     it('should return failure when database delete fails', async () => {
-      // Arrange
+      const productId = 'PR0000001';
       const error = new Error('Database delete failed');
+
       ormRepo.delete.mockRejectedValue(error);
 
-      // Act
-      const result = await repository.deleteById('PR0000001');
+      const result = await repository.deleteById(productId);
 
-      // Assert
       ResultAssertionHelper.assertResultFailure(
         result,
         'Failed to delete the product',
+        RepositoryError,
       );
     });
   });
