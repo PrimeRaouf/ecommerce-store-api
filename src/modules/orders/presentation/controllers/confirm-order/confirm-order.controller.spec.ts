@@ -2,7 +2,7 @@
 import { ConfirmOrderController } from './confirm-order.controller';
 import { ConfirmOrderUseCase } from '../../../application/usecases/confirm-order/confirm-order.usecase';
 import { OrderTestFactory } from '../../../testing/factories/order.factory';
-import { isFailure, Result } from '../../../../../core/domain/result';
+import { Result } from '../../../../../core/domain/result';
 import { ErrorFactory } from '../../../../../core/errors/error.factory';
 import { ControllerError } from '../../../../../core/errors/controller.error';
 import { OrderStatus } from '../../../domain/value-objects/order-status';

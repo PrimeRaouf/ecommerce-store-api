@@ -3,7 +3,7 @@ import { CreateOrderController } from './create-order.controller';
 import { CreateOrderUseCase } from '../../../application/usecases/create-order/create-order.usecase';
 import { OrderTestFactory } from '../../../testing/factories/order.factory';
 import { CreateOrderDtoTestFactory } from '../../../testing/factories/create-order-dto.factory';
-import { isFailure, Result } from '../../../../../core/domain/result';
+import { Result } from '../../../../../core/domain/result';
 import { ErrorFactory } from '../../../../../core/errors/error.factory';
 import { ControllerError } from '../../../../../core/errors/controller.error';
 import { ResultAssertionHelper } from '../../../../../testing';

@@ -4,7 +4,6 @@ import { MockOrderRepository } from '../../../testing/mocks/order-repository.moc
 import { OrderTestFactory } from '../../../testing/factories/order.factory';
 import { OrderBuilder } from '../../../testing/builders/order.builder';
 import { OrderStatus } from '../../../domain/value-objects/order-status';
-import { isFailure } from '../../../../../core/domain/result';
 import { UseCaseError } from '../../../../../core/errors/usecase.error';
 import { ResultAssertionHelper } from '../../../../../testing';
 

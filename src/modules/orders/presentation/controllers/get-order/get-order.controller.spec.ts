@@ -1,7 +1,7 @@
 // src/modules/orders/presentation/controllers/get-order.controller.spec.ts
 import { GetOrderController } from './get-order.controller';
 import { GetOrderUseCase } from '../../../application/usecases/get-order/get-order.usecase';
-import { isFailure, Result } from '../../../../../core/domain/result';
+import { Result } from '../../../../../core/domain/result';
 import { ErrorFactory } from '../../../../../core/errors/error.factory';
 import { ControllerError } from '../../../../../core/errors/controller.error';
 import { OrderTestFactory } from '../../../testing/factories/order.factory';

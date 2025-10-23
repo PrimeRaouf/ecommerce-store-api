@@ -2,7 +2,6 @@
 import { ShipOrderUseCase } from './ship-order.usecase';
 import { MockOrderRepository } from '../../../testing/mocks/order-repository.mock';
 import { OrderTestFactory } from '../../../testing/factories/order.factory';
-import { isFailure } from '../../../../../core/domain/result';
 import { UseCaseError } from '../../../../../core/errors/usecase.error';
 import { OrderStatus } from '../../../domain/value-objects/order-status';
 import { RepositoryError } from '../../../../../core/errors/repository.error';
