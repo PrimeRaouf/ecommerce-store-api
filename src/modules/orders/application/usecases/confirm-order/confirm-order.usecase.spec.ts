@@ -6,6 +6,7 @@ import { UseCaseError } from '../../../../../core/errors/usecase.error';
 import { OrderStatus } from '../../../domain/value-objects/order-status';
 import { RepositoryError } from '../../../../../core/errors/repository.error';
 import { ResultAssertionHelper } from '../../../../../testing';
+import { DomainError } from '../../../../../core/errors/domain.error';
 
 describe('ConfirmOrderUseCase', () => {
   let useCase: ConfirmOrderUseCase;
@@ -83,8 +84,8 @@ describe('ConfirmOrderUseCase', () => {
 
       ResultAssertionHelper.assertResultFailure(
         result,
-        'Order is not in a confirmable state',
-        UseCaseError,
+        'Cannot confirm order - payment must be completed first',
+        DomainError,
       );
 
       expect(mockOrderRepository.findById).toHaveBeenCalledWith(
@@ -103,8 +104,8 @@ describe('ConfirmOrderUseCase', () => {
 
       ResultAssertionHelper.assertResultFailure(
         result,
-        'Order is not in a confirmable state',
-        UseCaseError,
+        'Cannot confirm order - payment must be completed first',
+        DomainError,
       );
 
       expect(mockOrderRepository.updateStatus).not.toHaveBeenCalled();
@@ -119,7 +120,8 @@ describe('ConfirmOrderUseCase', () => {
 
       ResultAssertionHelper.assertResultFailure(
         result,
-        'Order is not in a confirmable state',
+        'Cannot confirm order - payment must be completed first',
+        DomainError,
       );
 
       expect(mockOrderRepository.updateStatus).not.toHaveBeenCalled();
@@ -134,7 +136,8 @@ describe('ConfirmOrderUseCase', () => {
 
       ResultAssertionHelper.assertResultFailure(
         result,
-        'Order is not in a confirmable state',
+        'Cannot confirm order - payment must be completed first',
+        DomainError,
       );
 
       expect(mockOrderRepository.updateStatus).not.toHaveBeenCalled();

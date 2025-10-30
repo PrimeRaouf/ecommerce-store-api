@@ -6,6 +6,7 @@ import { UseCaseError } from '../../../../../core/errors/usecase.error';
 import { OrderStatus } from '../../../domain/value-objects/order-status';
 import { RepositoryError } from '../../../../../core/errors/repository.error';
 import { ResultAssertionHelper } from '../../../../../testing';
+import { DomainError } from '../../../../../core/errors/domain.error';
 
 describe('ShipOrderUseCase', () => {
   let useCase: ShipOrderUseCase;
@@ -68,8 +69,8 @@ describe('ShipOrderUseCase', () => {
 
       ResultAssertionHelper.assertResultFailure(
         result,
-        'Order is not in a shippable state',
-        UseCaseError,
+        'Order must be in processing state to ship',
+        DomainError,
       );
       expect(mockOrderRepository.findById).toHaveBeenCalledWith(
         pendingOrder.id,
@@ -86,7 +87,8 @@ describe('ShipOrderUseCase', () => {
 
       ResultAssertionHelper.assertResultFailure(
         result,
-        'Order is not in a shippable state',
+        'Order must be in processing state to ship',
+        DomainError,
       );
       expect(mockOrderRepository.updateStatus).not.toHaveBeenCalled();
     });
@@ -100,7 +102,8 @@ describe('ShipOrderUseCase', () => {
 
       ResultAssertionHelper.assertResultFailure(
         result,
-        'Order is not in a shippable state',
+        'Order must be in processing state to ship',
+        DomainError,
       );
 
       expect(mockOrderRepository.updateStatus).not.toHaveBeenCalled();
@@ -115,7 +118,8 @@ describe('ShipOrderUseCase', () => {
 
       ResultAssertionHelper.assertResultFailure(
         result,
-        'Order is not in a shippable state',
+        'Order must be in processing state to ship',
+        DomainError,
       );
 
       expect(mockOrderRepository.updateStatus).not.toHaveBeenCalled();
@@ -130,7 +134,8 @@ describe('ShipOrderUseCase', () => {
 
       ResultAssertionHelper.assertResultFailure(
         result,
-        'Order is not in a shippable state',
+        'Order must be in processing state to ship',
+        DomainError,
       );
 
       expect(mockOrderRepository.updateStatus).not.toHaveBeenCalled();
@@ -145,7 +150,8 @@ describe('ShipOrderUseCase', () => {
 
       ResultAssertionHelper.assertResultFailure(
         result,
-        'Order is not in a shippable state',
+        'Order must be in processing state to ship',
+        DomainError,
       );
       expect(mockOrderRepository.updateStatus).not.toHaveBeenCalled();
     });

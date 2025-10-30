@@ -32,25 +32,18 @@ export class DeliverOrderUseCase
 
       const order: Order = requestedOrder.value;
 
-      // Check if order can be delivered before calling deliver()
-      if (!order.canBeDelivered()) {
-        return ErrorFactory.UseCaseError(
-          'Order cannot be delivered in current state',
-        );
-      }
-
-      // Now safe to call deliver()
-      order.deliver({
+      const deliverResult = order.deliver({
         notes: input.deliverOrderDto.codPayment?.notes,
         transactionId: input.deliverOrderDto.codPayment?.transactionId,
       });
+      if (deliverResult.isFailure) return deliverResult;
 
-      const deliverRequest = await this.orderRepository.updateStatus(
+      const updateResult = await this.orderRepository.updateStatus(
         order.id,
         order.status,
       );
-      if (deliverRequest.isFailure) {
-        return deliverRequest;
+      if (updateResult.isFailure) {
+        return updateResult;
       }
 
       return Result.success(order.toPrimitives());
