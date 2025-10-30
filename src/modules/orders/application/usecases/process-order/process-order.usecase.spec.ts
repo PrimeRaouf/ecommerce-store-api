@@ -7,6 +7,7 @@ import { UseCaseError } from '../../../../../core/errors/usecase.error';
 import { ResultAssertionHelper } from '../../../../../testing';
 import { MockOrderRepository } from '../../../testing';
 import { OrderTestFactory } from '../../../testing/factories/order.factory';
+import { DomainError } from '../../../../../core/errors/domain.error';
 
 describe('ProcessOrderUseCase', () => {
   let useCase: ProcessOrderUseCase;
@@ -64,8 +65,8 @@ describe('ProcessOrderUseCase', () => {
     // Assert:
     ResultAssertionHelper.assertResultFailure(
       result,
-      'Order is not in a shippable state',
-      UseCaseError,
+      'Order must be confirmed before processing',
+      DomainError,
     );
     expect(mockOrderRepo.updateStatus).not.toHaveBeenCalled();
   });
@@ -81,8 +82,8 @@ describe('ProcessOrderUseCase', () => {
     // Assert:
     ResultAssertionHelper.assertResultFailure(
       result,
-      'Order is not in a shippable state',
-      UseCaseError,
+      'Order must be confirmed before processing',
+      DomainError,
     );
     expect(mockOrderRepo.updateStatus).not.toHaveBeenCalled();
   });

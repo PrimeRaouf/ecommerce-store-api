@@ -18,16 +18,14 @@ export class CancelOrderUseCase
       if (requestedOrder.isFailure) return requestedOrder;
 
       const order: Order = requestedOrder.value;
-      if (!order.isCancellable()) {
-        return ErrorFactory.UseCaseError('Order is not in a cancellable state');
-      }
 
-      order.cancel();
+      const cancelResult = order.cancel();
+      if (cancelResult.isFailure) return cancelResult;
 
-      const cancelRequest = await this.orderRepository.cancelOrder(
+      const updateResult = await this.orderRepository.cancelOrder(
         order.toPrimitives(),
       );
-      if (cancelRequest.isFailure) return cancelRequest;
+      if (updateResult.isFailure) return updateResult;
 
       return Result.success(order.toPrimitives());
     } catch (error) {

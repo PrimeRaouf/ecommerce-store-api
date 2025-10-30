@@ -18,11 +18,9 @@ export class ProcessOrderUseCase
       if (orderResult.isFailure) return orderResult;
 
       const order: Order = orderResult.value;
-      if (!order.canBeProcessed()) {
-        return ErrorFactory.UseCaseError('Order is not in a shippable state');
-      }
 
-      order.process();
+      const processResult = order.process();
+      if (processResult.isFailure) return processResult;
 
       const updateResult = await this.orderRepository.updateStatus(
         order.id,

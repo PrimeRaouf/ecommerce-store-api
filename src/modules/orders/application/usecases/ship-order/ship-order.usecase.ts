@@ -16,17 +16,15 @@ export class ShipOrderUseCase implements UseCase<string, IOrder, UseCaseError> {
       if (requestedOrder.isFailure) return requestedOrder;
 
       const order: Order = requestedOrder.value;
-      if (!order.canBeShipped()) {
-        return ErrorFactory.UseCaseError('Order is not in a shippable state');
-      }
 
-      order.ship();
+      const shipResult = order.ship();
+      if (shipResult.isFailure) return shipResult;
 
-      const shipRequest = await this.orderRepository.updateStatus(
+      const updateResult = await this.orderRepository.updateStatus(
         order.id,
         order.status,
       );
-      if (shipRequest.isFailure) return shipRequest;
+      if (updateResult.isFailure) return updateResult;
 
       return Result.success(order.toPrimitives());
     } catch (error) {

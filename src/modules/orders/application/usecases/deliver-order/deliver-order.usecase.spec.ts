@@ -9,6 +9,7 @@ import { ResultAssertionHelper } from '../../../../../testing';
 import { DeliverOrderDto } from '../../../presentation/dto/deliver-order.dto';
 import { PaymentMethod } from '../../../domain/value-objects/payment-method';
 import { PaymentStatus } from '../../../domain/value-objects/payment-status';
+import { DomainError } from '../../../../../core/errors/domain.error';
 
 describe('DeliverOrderUseCase', () => {
   let useCase: DeliverOrderUseCase;
@@ -144,7 +145,7 @@ describe('DeliverOrderUseCase', () => {
       ResultAssertionHelper.assertResultFailure(
         result,
         'Order cannot be delivered in current state',
-        UseCaseError,
+        DomainError,
       );
 
       expect(mockOrderRepository.findById).toHaveBeenCalledWith(

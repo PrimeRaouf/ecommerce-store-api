@@ -18,17 +18,15 @@ export class ConfirmOrderUseCase
       if (requestedOrder.isFailure) return requestedOrder;
 
       const order: Order = requestedOrder.value;
-      if (!order.canBeConfirmed()) {
-        return ErrorFactory.UseCaseError('Order is not in a confirmable state');
-      }
 
-      order.confirm();
+      const confirmResult = order.confirm();
+      if (confirmResult.isFailure) return confirmResult;
 
-      const confirmRequest = await this.orderRepository.updateStatus(
+      const updateResult = await this.orderRepository.updateStatus(
         order.id,
         order.status,
       );
-      if (confirmRequest.isFailure) return confirmRequest;
+      if (updateResult.isFailure) return updateResult;
 
       return Result.success(order.toPrimitives());
     } catch (error) {

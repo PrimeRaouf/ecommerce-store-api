@@ -6,6 +6,7 @@ import { OrderStatus } from '../../../domain/value-objects/order-status';
 import { RepositoryError } from '../../../../../core/errors/repository.error';
 import { UseCaseError } from '../../../../../core/errors/usecase.error';
 import { ResultAssertionHelper } from '../../../../../testing';
+import { DomainError } from '../../../../../core/errors/domain.error';
 
 describe('CancelOrderUseCase', () => {
   let useCase: CancelOrderUseCase;
@@ -54,7 +55,7 @@ describe('CancelOrderUseCase', () => {
     expect(mockRepository.cancelOrder).not.toHaveBeenCalled();
   });
 
-  it('should return a failure result if the order is not in a cancellable state', async () => {
+  it('should return a failure result if the Order cannot be cancelled in current state', async () => {
     const orderId = 'OR0000001';
     const nonCancellableOrder = OrderTestFactory.createNonCancellableOrder({
       id: orderId,
@@ -66,8 +67,8 @@ describe('CancelOrderUseCase', () => {
 
     ResultAssertionHelper.assertResultFailure(
       result,
-      'Order is not in a cancellable state',
-      UseCaseError,
+      'Order cannot be cancelled in current state',
+      DomainError,
     );
 
     expect(mockRepository.cancelOrder).not.toHaveBeenCalled();
