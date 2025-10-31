@@ -9,6 +9,7 @@ import { RedisModule } from './core/infrastructure/redis/redis.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { ProductsModule } from './modules/products/products.module';
 import { CoreModule } from './core/core.module';
+import { CartsModule } from './modules/carts/carts.module';
 
 const env = process.env.NODE_ENV || 'development';
 const envFilePath = `.env.${env}`;
@@ -22,6 +23,7 @@ const loadEnvFile = existsSync(envFilePath) ? envFilePath : undefined;
     RedisModule,
     ProductsModule,
     OrdersModule,
+    CartsModule,
 
     ConfigModule.forRoot({
       isGlobal: true,
