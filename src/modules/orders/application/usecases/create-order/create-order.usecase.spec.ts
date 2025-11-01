@@ -7,6 +7,7 @@ import { OrderFactory } from '../../../domain/factories/order.factory';
 import { UseCaseError } from '../../../../../core/errors/usecase.error';
 import { ErrorFactory } from '../../../../../core/errors/error.factory';
 import { ResultAssertionHelper } from '../../../../../testing';
+import { Order } from '../../../domain/entities/order';
 
 describe('CreateOrderUseCase', () => {
   let useCase: CreateOrderUseCase;
@@ -26,7 +27,9 @@ describe('CreateOrderUseCase', () => {
   describe('execute', () => {
     it('should return Success if order is created', async () => {
       const createOrderDto = CreateOrderDtoTestFactory.createMockDto();
-      const mockOrder = OrderTestFactory.createMockOrder();
+      const mockOrder = Order.fromPrimitives(
+        OrderTestFactory.createMockOrder(),
+      );
 
       mockOrderRepository.mockSuccessfulSave(mockOrder);
 
@@ -84,7 +87,7 @@ describe('CreateOrderUseCase', () => {
         CreateOrderDtoTestFactory.createCashOnDeliveryDto();
       const mockOrder = OrderTestFactory.createCashOnDeliveryOrder();
 
-      mockOrderRepository.mockSuccessfulSave(mockOrder);
+      mockOrderRepository.mockSuccessfulSave(Order.fromPrimitives(mockOrder));
 
       const result = await useCase.execute(createOrderDto);
 
@@ -100,7 +103,7 @@ describe('CreateOrderUseCase', () => {
       ]);
       const mockOrder = OrderTestFactory.createMultiItemOrder(3);
 
-      mockOrderRepository.mockSuccessfulSave(mockOrder);
+      mockOrderRepository.mockSuccessfulSave(Order.fromPrimitives(mockOrder));
 
       const result = await useCase.execute(createOrderDto);
 

@@ -3,16 +3,16 @@ import { OrderRepository } from '../../domain/repositories/order-repository';
 import { Result } from '../../../../core/domain/result';
 import { RepositoryError } from '../../../../core/errors/repository.error';
 import { Order } from '../../domain/entities/order';
-import { IOrder } from '../../domain/interfaces/order.interface';
 import { AggregatedOrderInput } from '../../domain/factories/order.factory';
 import { CreateOrderItemDto } from '../../presentation/dto/create-order-item.dto';
 import { ListOrdersQueryDto } from '../../presentation/dto/list-orders-query.dto';
 import { OrderStatus } from '../../domain/value-objects/order-status';
+import { IOrder } from '../../domain/interfaces/order.interface';
 
 export class MockOrderRepository implements OrderRepository {
   // Jest mock functions
   save = jest.fn<
-    Promise<Result<IOrder, RepositoryError>>,
+    Promise<Result<Order, RepositoryError>>,
     [AggregatedOrderInput]
   >();
   updateStatus = jest.fn<
@@ -20,15 +20,15 @@ export class MockOrderRepository implements OrderRepository {
     [string, OrderStatus]
   >();
   updateItemsInfo = jest.fn<
-    Promise<Result<IOrder, RepositoryError>>,
+    Promise<Result<Order, RepositoryError>>,
     [string, CreateOrderItemDto[]]
   >();
   findById = jest.fn<Promise<Result<Order, RepositoryError>>, [string]>();
   listOrders = jest.fn<
-    Promise<Result<IOrder[], RepositoryError>>,
+    Promise<Result<Order[], RepositoryError>>,
     [ListOrdersQueryDto]
   >();
-  cancelOrder = jest.fn<Promise<Result<void, RepositoryError>>, [IOrder]>();
+  cancelOrder = jest.fn<Promise<Result<void, RepositoryError>>, [Order]>();
   deleteById = jest.fn<Promise<Result<void, RepositoryError>>, [string]>();
 
   // Helper methods for common test scenarios
@@ -43,7 +43,7 @@ export class MockOrderRepository implements OrderRepository {
     );
   }
 
-  mockSuccessfulSave(order: IOrder): void {
+  mockSuccessfulSave(order: Order): void {
     this.save.mockResolvedValue(Result.success(order));
   }
 
@@ -57,7 +57,7 @@ export class MockOrderRepository implements OrderRepository {
     );
   }
 
-  mockSuccessfulUpdateItems(order: IOrder): void {
+  mockSuccessfulUpdateItems(order: Order): void {
     this.updateItemsInfo.mockResolvedValue(Result.success(order));
   }
 
@@ -78,7 +78,10 @@ export class MockOrderRepository implements OrderRepository {
   }
 
   mockSuccessfulList(orders: IOrder[]): void {
-    this.listOrders.mockResolvedValue(Result.success(orders));
+    const domainOrders = orders.map((order) => {
+      return Order.fromPrimitives(order);
+    });
+    this.listOrders.mockResolvedValue(Result.success(domainOrders));
   }
 
   mockSuccessfulDelete(): void {
