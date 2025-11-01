@@ -1,4 +1,5 @@
 // src/modules/orders/infrastructure/mappers/order.mapper.ts
+import { CreateFromEntity } from '../../../../../shared/infrastructure/mappers/utils/create-from-entity.type';
 import { Order, OrderProps } from '../../../domain/entities/order';
 import { OrderItemProps } from '../../../domain/entities/order-items';
 import { IOrder } from '../../../domain/interfaces/order.interface';
@@ -9,9 +10,6 @@ import { OrderItemCreate, OrderItemMapper } from './order-item.mapper';
 import { PaymentInfoMapper } from './payment-info.mapper';
 import { ShippingAddressMapper } from './shipping-address.mapper';
 
-export type CreateFromEntity<T, ExcludeKeys extends keyof T = never> = Required<
-  Omit<T, ExcludeKeys>
->;
 type OrderCreate = CreateFromEntity<OrderEntity, 'items'>;
 
 export type OrderForCache = Omit<IOrder, 'createdAt' | 'updatedAt'> & {
@@ -47,7 +45,9 @@ export class OrderMapper {
     return Order.fromPrimitives(props);
   }
 
-  static toEntity(primitives: IOrder): OrderEntity {
+  static toEntity(domain: Order): OrderEntity {
+    const primitives = domain.toPrimitives();
+
     const orderPayload: OrderCreate = {
       id: primitives.id,
       customerId: primitives.customerId,
@@ -102,11 +102,12 @@ export class OrderMapper {
 }
 
 export class OrderCacheMapper {
-  public static toCache(order: IOrder): OrderForCache {
+  public static toCache(domain: Order): OrderForCache {
+    const primitives = domain.toPrimitives();
     return {
-      ...order,
-      createdAt: order.createdAt.getTime(),
-      updatedAt: order.updatedAt.getTime(),
+      ...primitives,
+      createdAt: primitives.createdAt.getTime(),
+      updatedAt: primitives.updatedAt.getTime(),
     };
   }
 
