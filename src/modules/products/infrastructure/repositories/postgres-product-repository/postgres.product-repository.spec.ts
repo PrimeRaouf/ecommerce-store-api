@@ -23,7 +23,6 @@ describe('PostgresProductRepository', () => {
     description: mockProduct.description,
     price: mockProduct.price,
     sku: mockProduct.sku,
-    stockQuantity: mockProduct.stockQuantity,
     createdAt: mockProduct.createdAt,
     updatedAt: mockProduct.updatedAt,
   };
@@ -237,18 +236,6 @@ describe('PostgresProductRepository', () => {
       expect(ormRepo.findOne).toHaveBeenCalledWith({
         where: { id: productId },
       });
-    });
-
-    it('should find low stock product', async () => {
-      const lowStockProduct = ProductTestFactory.createLowStockProduct();
-      const lowStockEntity = { ...mockProductEntity, ...lowStockProduct };
-
-      ormRepo.findOne.mockResolvedValue(lowStockEntity);
-
-      const result = await repository.findById(lowStockProduct.id);
-
-      ResultAssertionHelper.assertResultSuccess(result);
-      expect(result.value.stockQuantity).toBe(3);
     });
 
     it('should return failure when product not found', async () => {

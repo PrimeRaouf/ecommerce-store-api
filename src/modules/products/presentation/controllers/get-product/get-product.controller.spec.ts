@@ -72,21 +72,5 @@ describe('GetProductController', () => {
         error,
       );
     });
-
-    it('should get low stock product', async () => {
-      const productId = 'PR0000001';
-      const lowStockProduct = ProductTestFactory.createLowStockProduct({
-        id: productId,
-      });
-
-      mockGetProductUseCase.execute.mockResolvedValue(
-        Result.success(lowStockProduct),
-      );
-
-      const result = await controller.handle(productId);
-
-      ResultAssertionHelper.assertResultSuccess(result);
-      expect(result.value.stockQuantity).toBe(3);
-    });
   });
 });

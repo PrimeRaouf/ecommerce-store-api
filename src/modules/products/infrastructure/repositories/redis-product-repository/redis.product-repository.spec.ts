@@ -1,7 +1,7 @@
 // src/modules/products/infrastructure/repositories/RedisProductRepository/redis.product-repository.spec.ts
 import { CacheService } from '../../../../../core/infrastructure/redis/cache/cache.service';
 import { ProductRepository } from '../../../domain/repositories/product-repository';
-import { Product_REDIS } from '../../../../../core/infrastructure/redis/constants/redis.constants';
+import { PRODUCT_REDIS } from '../../../../../core/infrastructure/redis/constants/redis.constants';
 import { RedisProductRepository } from './redis.product-repository';
 import { ProductTestFactory } from '../../../testing/factories/product.factory';
 import { CreateProductDtoFactory } from '../../../testing/factories/create-product-dto.factory';
@@ -62,12 +62,12 @@ describe('RedisProductRepository', () => {
       expect(result.value).toEqual(mockProduct);
       expect(postgresRepo.save).toHaveBeenCalledWith(createDto);
       expect(cacheService.set).toHaveBeenCalledWith(
-        `${Product_REDIS.CACHE_KEY}:${mockProduct.id}`,
+        `${PRODUCT_REDIS.CACHE_KEY}:${mockProduct.id}`,
         mockProduct,
-        { ttl: Product_REDIS.EXPIRATION },
+        { ttl: PRODUCT_REDIS.EXPIRATION },
       );
       expect(cacheService.delete).toHaveBeenCalledWith(
-        Product_REDIS.IS_CACHED_FLAG,
+        PRODUCT_REDIS.IS_CACHED_FLAG,
       );
     });
 
@@ -143,12 +143,12 @@ describe('RedisProductRepository', () => {
       expect(result.value).toEqual(mockProduct);
       expect(postgresRepo.update).toHaveBeenCalledWith(productId, updateDto);
       expect(cacheService.set).toHaveBeenCalledWith(
-        `${Product_REDIS.CACHE_KEY}:${mockProduct.id}`,
+        `${PRODUCT_REDIS.CACHE_KEY}:${mockProduct.id}`,
         mockProduct,
-        { ttl: Product_REDIS.EXPIRATION },
+        { ttl: PRODUCT_REDIS.EXPIRATION },
       );
       expect(cacheService.delete).toHaveBeenCalledWith(
-        Product_REDIS.IS_CACHED_FLAG,
+        PRODUCT_REDIS.IS_CACHED_FLAG,
       );
     });
 
@@ -213,7 +213,7 @@ describe('RedisProductRepository', () => {
       ResultAssertionHelper.assertResultSuccess(result);
       expect(result.value).toEqual(mockProduct);
       expect(cacheService.get).toHaveBeenCalledWith(
-        `${Product_REDIS.CACHE_KEY}:${productId}`,
+        `${PRODUCT_REDIS.CACHE_KEY}:${productId}`,
       );
       expect(postgresRepo.findById).not.toHaveBeenCalled();
     });
@@ -231,21 +231,10 @@ describe('RedisProductRepository', () => {
       expect(result.value).toEqual(mockProduct);
       expect(postgresRepo.findById).toHaveBeenCalledWith(productId);
       expect(cacheService.set).toHaveBeenCalledWith(
-        `${Product_REDIS.CACHE_KEY}:${productId}`,
+        `${PRODUCT_REDIS.CACHE_KEY}:${productId}`,
         mockProduct,
-        { ttl: Product_REDIS.EXPIRATION },
+        { ttl: PRODUCT_REDIS.EXPIRATION },
       );
-    });
-
-    it('should find low stock product from cache', async () => {
-      const lowStockProduct = ProductTestFactory.createLowStockProduct();
-
-      cacheService.get.mockResolvedValue(lowStockProduct);
-
-      const result = await repo.findById(lowStockProduct.id);
-
-      ResultAssertionHelper.assertResultSuccess(result);
-      expect(result.value.stockQuantity).toBe(3);
     });
 
     it('should return failure if postgres findById fails', async () => {
@@ -294,9 +283,9 @@ describe('RedisProductRepository', () => {
       ResultAssertionHelper.assertResultSuccess(result);
       expect(result.value).toEqual(products);
       expect(cacheService.get).toHaveBeenCalledWith(
-        Product_REDIS.IS_CACHED_FLAG,
+        PRODUCT_REDIS.IS_CACHED_FLAG,
       );
-      expect(cacheService.getAll).toHaveBeenCalledWith(Product_REDIS.INDEX);
+      expect(cacheService.getAll).toHaveBeenCalledWith(PRODUCT_REDIS.INDEX);
       expect(postgresRepo.findAll).not.toHaveBeenCalled();
     });
 
@@ -315,15 +304,15 @@ describe('RedisProductRepository', () => {
       expect(postgresRepo.findAll).toHaveBeenCalled();
       expect(cacheService.setAll).toHaveBeenCalledWith(
         products.map((p) => ({
-          key: `${Product_REDIS.CACHE_KEY}:${p.id}`,
+          key: `${PRODUCT_REDIS.CACHE_KEY}:${p.id}`,
           value: p,
         })),
-        { ttl: Product_REDIS.EXPIRATION },
+        { ttl: PRODUCT_REDIS.EXPIRATION },
       );
       expect(cacheService.set).toHaveBeenCalledWith(
-        Product_REDIS.IS_CACHED_FLAG,
+        PRODUCT_REDIS.IS_CACHED_FLAG,
         'true',
-        { ttl: Product_REDIS.EXPIRATION },
+        { ttl: PRODUCT_REDIS.EXPIRATION },
       );
     });
 
@@ -405,10 +394,10 @@ describe('RedisProductRepository', () => {
       ResultAssertionHelper.assertResultSuccess(result);
       expect(postgresRepo.deleteById).toHaveBeenCalledWith(productId);
       expect(cacheService.delete).toHaveBeenCalledWith(
-        `${Product_REDIS.CACHE_KEY}:${productId}`,
+        `${PRODUCT_REDIS.CACHE_KEY}:${productId}`,
       );
       expect(cacheService.delete).toHaveBeenCalledWith(
-        Product_REDIS.IS_CACHED_FLAG,
+        PRODUCT_REDIS.IS_CACHED_FLAG,
       );
     });
 
@@ -433,7 +422,7 @@ describe('RedisProductRepository', () => {
 
       postgresRepo.deleteById.mockResolvedValue(Result.success(undefined));
       cacheService.delete.mockImplementation((key: string) => {
-        if (key === `${Product_REDIS.CACHE_KEY}:${productId}`) {
+        if (key === `${PRODUCT_REDIS.CACHE_KEY}:${productId}`) {
           return Promise.reject(new Error('Cache delete error'));
         }
         return Promise.resolve();
@@ -453,7 +442,7 @@ describe('RedisProductRepository', () => {
 
       postgresRepo.deleteById.mockResolvedValue(Result.success(undefined));
       cacheService.delete.mockImplementation((key: string) => {
-        if (key === Product_REDIS.IS_CACHED_FLAG) {
+        if (key === PRODUCT_REDIS.IS_CACHED_FLAG) {
           return Promise.reject(new Error('Flag delete error'));
         }
         return Promise.resolve();

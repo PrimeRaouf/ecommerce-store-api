@@ -3,7 +3,7 @@ import { Result } from '../../../../../core/domain/result';
 import { ErrorFactory } from '../../../../../core/errors/error.factory';
 import { RepositoryError } from '../../../../../core/errors/repository.error';
 import { CacheService } from '../../../../../core/infrastructure/redis/cache/cache.service';
-import { Product_REDIS } from '../../../../../core/infrastructure/redis/constants/redis.constants';
+import { PRODUCT_REDIS } from '../../../../../core/infrastructure/redis/constants/redis.constants';
 import { IProduct } from '../../../domain/interfaces/product.interface';
 import { ProductRepository } from '../../../domain/repositories/product-repository';
 import { CreateProductDto } from '../../../presentation/dto/create-product.dto';
@@ -26,11 +26,11 @@ export class RedisProductRepository implements ProductRepository {
       const product = saveResult.value;
       // Cache it
       await this.cacheService.set(
-        `${Product_REDIS.CACHE_KEY}:${product.id}`,
+        `${PRODUCT_REDIS.CACHE_KEY}:${product.id}`,
         product,
-        { ttl: Product_REDIS.EXPIRATION },
+        { ttl: PRODUCT_REDIS.EXPIRATION },
       );
-      await this.cacheService.delete(Product_REDIS.IS_CACHED_FLAG);
+      await this.cacheService.delete(PRODUCT_REDIS.IS_CACHED_FLAG);
 
       return Result.success<IProduct>(product);
     } catch (error) {
@@ -49,11 +49,11 @@ export class RedisProductRepository implements ProductRepository {
 
       const product = updateResult.value;
       // Update in cache
-      await this.cacheService.set(`${Product_REDIS.CACHE_KEY}:${id}`, product, {
-        ttl: Product_REDIS.EXPIRATION,
+      await this.cacheService.set(`${PRODUCT_REDIS.CACHE_KEY}:${id}`, product, {
+        ttl: PRODUCT_REDIS.EXPIRATION,
       });
       // Invalidate the list cache
-      await this.cacheService.delete(Product_REDIS.IS_CACHED_FLAG);
+      await this.cacheService.delete(PRODUCT_REDIS.IS_CACHED_FLAG);
 
       return Result.success<IProduct>(product);
     } catch (error) {
@@ -65,7 +65,7 @@ export class RedisProductRepository implements ProductRepository {
     try {
       // Try cache first
       const cached = await this.cacheService.get<IProduct>(
-        `${Product_REDIS.CACHE_KEY}:${id}`,
+        `${PRODUCT_REDIS.CACHE_KEY}:${id}`,
       );
       if (cached) {
         return Result.success<IProduct>(cached);
@@ -77,9 +77,9 @@ export class RedisProductRepository implements ProductRepository {
 
       // Cache the result
       await this.cacheService.set(
-        `${Product_REDIS.CACHE_KEY}:${id}`,
+        `${PRODUCT_REDIS.CACHE_KEY}:${id}`,
         dbResult.value,
-        { ttl: Product_REDIS.EXPIRATION },
+        { ttl: PRODUCT_REDIS.EXPIRATION },
       );
 
       return dbResult;
@@ -91,12 +91,12 @@ export class RedisProductRepository implements ProductRepository {
   async findAll(): Promise<Result<IProduct[], RepositoryError>> {
     try {
       const isCached = await this.cacheService.get<string>(
-        Product_REDIS.IS_CACHED_FLAG,
+        PRODUCT_REDIS.IS_CACHED_FLAG,
       );
 
       if (isCached) {
         const cachedProducts = await this.cacheService.getAll<IProduct>(
-          Product_REDIS.INDEX,
+          PRODUCT_REDIS.INDEX,
         );
         return Result.success(cachedProducts);
       }
@@ -109,16 +109,16 @@ export class RedisProductRepository implements ProductRepository {
       const products = dbResult.value;
 
       const cacheEntries = products.map((product) => ({
-        key: `${Product_REDIS.CACHE_KEY}:${product.id}`,
+        key: `${PRODUCT_REDIS.CACHE_KEY}:${product.id}`,
         value: product,
       }));
 
       await this.cacheService.setAll(cacheEntries, {
-        ttl: Product_REDIS.EXPIRATION,
+        ttl: PRODUCT_REDIS.EXPIRATION,
       });
 
-      await this.cacheService.set(Product_REDIS.IS_CACHED_FLAG, 'true', {
-        ttl: Product_REDIS.EXPIRATION,
+      await this.cacheService.set(PRODUCT_REDIS.IS_CACHED_FLAG, 'true', {
+        ttl: PRODUCT_REDIS.EXPIRATION,
       });
 
       return Result.success(products);
@@ -132,8 +132,8 @@ export class RedisProductRepository implements ProductRepository {
       const deleteResult = await this.postgresRepo.deleteById(id);
       if (deleteResult.isFailure) return deleteResult;
 
-      await this.cacheService.delete(`${Product_REDIS.CACHE_KEY}:${id}`);
-      await this.cacheService.delete(Product_REDIS.IS_CACHED_FLAG);
+      await this.cacheService.delete(`${PRODUCT_REDIS.CACHE_KEY}:${id}`);
+      await this.cacheService.delete(PRODUCT_REDIS.IS_CACHED_FLAG);
 
       return Result.success<void>(undefined);
     } catch (error) {

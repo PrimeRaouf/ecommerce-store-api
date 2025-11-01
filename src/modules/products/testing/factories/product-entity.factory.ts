@@ -14,7 +14,6 @@ export class ProductEntityTestFactory {
       description: 'A test product for unit tests',
       price: 100,
       sku: 'TEST-001',
-      stockQuantity: 10,
       createdAt: new Date('2025-01-01T10:00:00Z'),
       updatedAt: new Date('2025-01-01T10:00:00Z'),
     };
@@ -46,7 +45,6 @@ export class ProductEntityTestFactory {
     overrides?: Partial<ProductEntity>,
   ): ProductEntity {
     return this.createProductEntity({
-      stockQuantity: 2,
       ...overrides,
     });
   }
@@ -58,7 +56,6 @@ export class ProductEntityTestFactory {
     overrides?: Partial<ProductEntity>,
   ): ProductEntity {
     return this.createProductEntity({
-      stockQuantity: 0,
       ...overrides,
     });
   }
