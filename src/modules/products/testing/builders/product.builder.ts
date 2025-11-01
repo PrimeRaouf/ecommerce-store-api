@@ -34,11 +34,6 @@ export class ProductBuilder {
     return this;
   }
 
-  withStockQuantity(quantity: number): this {
-    this.product.stockQuantity = quantity;
-    return this;
-  }
-
   withCreatedAt(date: Date): this {
     this.product.createdAt = date;
     return this;
@@ -49,63 +44,21 @@ export class ProductBuilder {
     return this;
   }
 
-  /**
-   * Sets product as in stock with good quantity
-   */
-  asInStock(): this {
-    return this.withStockQuantity(50);
-  }
-
-  /**
-   * Sets product as low stock (< 5 items)
-   */
-  asLowStock(): this {
-    return this.withStockQuantity(3);
-  }
-
-  /**
-   * Sets product as out of stock
-   */
-  asOutOfStock(): this {
-    return this.withStockQuantity(0);
-  }
-
-  /**
-   * Sets product as budget-friendly
-   */
   asBudget(): this {
     return this.withPrice(19.99).withName('Budget Product');
   }
 
-  /**
-   * Sets product as premium
-   */
-  asPremium(): this {
-    return this.withPrice(999.99)
-      .withName('Premium Product')
-      .withStockQuantity(5);
-  }
-
-  /**
-   * Sets product without optional fields
-   */
   asMinimal(): this {
     this.product.description = undefined;
     this.product.sku = undefined;
     return this;
   }
 
-  /**
-   * Sets product as newly created (recent dates)
-   */
   asNew(): this {
     const now = new Date();
     return this.withCreatedAt(now).withUpdatedAt(now);
   }
 
-  /**
-   * Sets product as old (dates from past year)
-   */
   asOld(): this {
     const lastYear = new Date();
     lastYear.setFullYear(lastYear.getFullYear() - 1);

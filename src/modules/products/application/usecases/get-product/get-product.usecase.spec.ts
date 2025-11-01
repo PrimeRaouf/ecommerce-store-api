@@ -2,7 +2,6 @@
 import { GetProductUseCase } from './get-product.usecase';
 import { MockProductRepository } from '../../../testing/mocks/product-repository.mock';
 import { ProductTestFactory } from '../../../testing/factories/product.factory';
-import { ProductBuilder } from '../../../testing/builders/product.builder';
 import { UseCaseError } from '../../../../../core/errors/usecase.error';
 import { ResultAssertionHelper } from '../../../../../testing';
 
@@ -62,21 +61,6 @@ describe('GetProductUseCase', () => {
         UseCaseError,
         repoError,
       );
-    });
-
-    it('should return low stock product', async () => {
-      const productId = 'PR0000001';
-      const lowStockProduct = new ProductBuilder()
-        .withId(productId)
-        .asLowStock()
-        .build();
-
-      mockRepository.mockSuccessfulFind(lowStockProduct);
-
-      const result = await useCase.execute(productId);
-
-      ResultAssertionHelper.assertResultSuccess(result);
-      expect(result.value.stockQuantity).toBe(3);
     });
   });
 });

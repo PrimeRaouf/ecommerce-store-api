@@ -23,6 +23,7 @@ import {
 } from '../../../testing';
 import { OrderTestFactory } from '../../../testing/factories/order.factory';
 import { IdGeneratorService } from '../../../../../core/infrastructure/orm/id-generator.service';
+import { OrderMapper } from '../../persistence/mappers/order.mapper';
 
 describe('PostgresOrderRepository', () => {
   let repository: PostgresOrderRepository;
@@ -84,8 +85,10 @@ describe('PostgresOrderRepository', () => {
 
       const result = await repository.listOrders({});
 
+      const domainOrders = OrderMapper.toDomainArray(orders);
+
       ResultAssertionHelper.assertResultSuccess(result);
-      expect(result.value).toEqual(orders);
+      expect(result.value).toEqual(domainOrders);
       expect(mockQueryBuilder.skip).toHaveBeenCalledWith(0);
       expect(mockQueryBuilder.take).toHaveBeenCalledWith(10);
       expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
@@ -193,20 +196,6 @@ describe('PostgresOrderRepository', () => {
       mockManager.save.mockResolvedValue(multiItemData.orderEntity);
 
       const result = await repository.save(multiItemData.createOrderDto as any);
-
-      ResultAssertionHelper.assertResultSuccess(result);
-    });
-
-    it('should save order with low stock product', async () => {
-      const lowStockProduct = ProductEntityTestFactory.createLowStockProduct({
-        id: testData.productId,
-        stockQuantity: 5,
-      });
-
-      mockManager.find.mockResolvedValue([lowStockProduct]);
-      mockManager.save.mockResolvedValue(testData.orderEntity);
-
-      const result = await repository.save(testData.createOrderDto as any);
 
       ResultAssertionHelper.assertResultSuccess(result);
     });
@@ -370,7 +359,9 @@ describe('PostgresOrderRepository', () => {
 
       ResultAssertionHelper.assertResultSuccess(result);
       if (result.isSuccess) {
-        expect(result.value).toEqual(testData.orderEntity);
+        expect(result.value).toEqual(
+          OrderMapper.toDomain(testData.orderEntity),
+        );
       }
       expect(mockManager.save).toHaveBeenCalled();
     });
@@ -530,9 +521,7 @@ describe('PostgresOrderRepository', () => {
 
       mockManager.save.mockResolvedValue(cancelledEntity);
 
-      const result = await repository.cancelOrder(
-        cancelledOrder.toPrimitives(),
-      );
+      const result = await repository.cancelOrder(cancelledOrder);
 
       ResultAssertionHelper.assertResultSuccess(result);
       expect(mockManager.createQueryBuilder).toHaveBeenCalled();
@@ -549,9 +538,7 @@ describe('PostgresOrderRepository', () => {
 
       mockManager.save.mockRejectedValue(new Error('DB Error'));
 
-      const result = await repository.cancelOrder(
-        cancelledOrder.toPrimitives(),
-      );
+      const result = await repository.cancelOrder(cancelledOrder);
 
       ResultAssertionHelper.assertResultFailure(
         result,
@@ -570,9 +557,7 @@ describe('PostgresOrderRepository', () => {
         new Error('DB Error during stock restore'),
       );
 
-      const result = await repository.cancelOrder(
-        cancelledOrder.toPrimitives(),
-      );
+      const result = await repository.cancelOrder(cancelledOrder);
 
       ResultAssertionHelper.assertResultFailure(
         result,
@@ -597,9 +582,7 @@ describe('PostgresOrderRepository', () => {
       );
       mockManager.save.mockResolvedValue(cancelledEntity);
 
-      const result = await repository.cancelOrder(
-        cancelledOrder.toPrimitives(),
-      );
+      const result = await repository.cancelOrder(cancelledOrder);
 
       ResultAssertionHelper.assertResultSuccess(result);
       expect(mockManager.createQueryBuilder).toHaveBeenCalledTimes(3);
@@ -620,9 +603,7 @@ describe('PostgresOrderRepository', () => {
       );
       mockManager.save.mockResolvedValue(cancelledEntity);
 
-      const result = await repository.cancelOrder(
-        cancelledOrder.toPrimitives(),
-      );
+      const result = await repository.cancelOrder(cancelledOrder);
 
       ResultAssertionHelper.assertResultSuccess(result);
     });
@@ -649,9 +630,7 @@ describe('PostgresOrderRepository', () => {
           });
         mockManager.save.mockResolvedValue(cancelledEntity);
 
-        const result = await repository.cancelOrder(
-          cancelledOrder.toPrimitives(),
-        );
+        const result = await repository.cancelOrder(cancelledOrder);
 
         ResultAssertionHelper.assertResultSuccess(result);
         expect(result.value).toBe(undefined);

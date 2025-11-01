@@ -1,10 +1,5 @@
-import {
-  IsString,
-  IsOptional,
-  IsNumber,
-  IsPositive,
-  Min,
-} from 'class-validator';
+// src/modules/products/presentation/dto/create-product.dto.ts
+import { IsString, IsOptional, IsNumber, IsPositive } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateProductDto {
@@ -26,9 +21,4 @@ export class CreateProductDto {
   @IsNumber()
   @IsPositive()
   price: number;
-
-  @ApiProperty({ example: 50 })
-  @IsNumber()
-  @Min(0)
-  stockQuantity: number;
 }

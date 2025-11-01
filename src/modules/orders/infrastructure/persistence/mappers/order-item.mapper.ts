@@ -1,6 +1,6 @@
+import { CreateFromEntity } from '../../../../../shared/infrastructure/mappers/utils/create-from-entity.type';
 import { OrderItem } from '../../../domain/entities/order-items';
 import { OrderItemEntity } from '../../orm/order-item.schema';
-import { CreateFromEntity } from './order.mapper';
 
 export type OrderItemCreate = CreateFromEntity<
   OrderItemEntity,

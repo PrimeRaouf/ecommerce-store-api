@@ -6,9 +6,6 @@ import {
   ObjectLiteral,
 } from 'typeorm';
 
-/**
- * Creates a mock TypeORM query builder with all common methods
- */
 export function createMockQueryBuilder<T extends ObjectLiteral>(): jest.Mocked<
   SelectQueryBuilder<T>
 > {
@@ -47,9 +44,6 @@ export function createMockQueryBuilder<T extends ObjectLiteral>(): jest.Mocked<
   return mockQb;
 }
 
-/**
- * Creates a mock TypeORM transaction manager
- */
 export function createMockTransactionManager(options?: {
   mockProduct?: any;
   mockOrder?: any;
@@ -80,9 +74,6 @@ export function createMockTransactionManager(options?: {
   };
 }
 
-/**
- * Creates a mock DataSource
- */
 export function createMockDataSource(mockManager?: any) {
   const manager = mockManager || createMockTransactionManager();
 

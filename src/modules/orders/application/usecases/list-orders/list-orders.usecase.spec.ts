@@ -9,6 +9,7 @@ import { ListOrdersQueryDto } from '../../../presentation/dto/list-orders-query.
 import { Result } from '../../../../../core/domain/result';
 import { OrderStatus } from '../../../domain/value-objects/order-status';
 import { ResultAssertionHelper } from '../../../../../testing';
+import { Order } from '../../../domain/entities/order';
 
 describe('ListOrdersUsecase', () => {
   let usecase: ListOrdersUsecase;
@@ -25,7 +26,9 @@ describe('ListOrdersUsecase', () => {
 
   it('returns success with list of orders when repository returns success', async () => {
     const dto: ListOrdersQueryDto = {};
-    const sampleOrder = OrderTestFactory.createMockOrder();
+    const sampleOrder = Order.fromPrimitives(
+      OrderTestFactory.createMockOrder(),
+    );
 
     mockRepository.mockSuccessfulList([sampleOrder]);
 

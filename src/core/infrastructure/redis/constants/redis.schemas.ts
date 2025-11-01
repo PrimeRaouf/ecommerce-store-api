@@ -8,9 +8,17 @@ export const OrderIndexSchema = {
 };
 
 export const ProductIndexSchema = {
-  '$.id': { type: 'TEXT', AS: 'id' }, // lookup by ID
-  '$.name': { type: 'TEXT', AS: 'name' }, // search by name
-  '$.sku': { type: 'TEXT', AS: 'sku' }, // search by SKU
-  '$.price': { type: 'NUMERIC', AS: 'price' }, // filter/range queries
-  '$.stockQuantity': { type: 'NUMERIC', AS: 'stockQuantity' }, // check stock
+  '$.id': { type: 'TEXT', AS: 'id' },
+  '$.name': { type: 'TEXT', AS: 'name' },
+  '$.sku': { type: 'TEXT', AS: 'sku' },
+  '$.price': { type: 'NUMERIC', AS: 'price' },
+  '$.stockQuantity': { type: 'NUMERIC', AS: 'stockQuantity' },
+};
+
+export const InventoryIndexSchema = {
+  '$.id': { type: 'TEXT', AS: 'id' },
+  '$.productId': { type: 'TEXT', AS: 'productId' },
+  '$.availableQuantity': { type: 'NUMERIC', AS: 'availableQuantity' },
+  '$.lowStockThreshold': { type: 'NUMERIC', AS: 'lowStockThreshold' },
+  '$.updatedAt': { type: 'NUMERIC', AS: 'updatedAt', SORTABLE: true },
 };
