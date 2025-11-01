@@ -1,16 +1,9 @@
 // src/testing/helpers/test-data.helper.ts
-
 import { CreateOrderDtoTestFactory } from '../../modules/orders/testing/factories/create-order-dto.factory';
 import { OrderEntityTestFactory } from '../../modules/orders/testing/factories/order-entity.factory';
 import { ProductEntityTestFactory } from '../../modules/products/testing/factories/product-entity.factory';
 
-/**
- * Helper class for creating consistent test data sets
- */
 export class TestDataHelper {
-  /**
-   * Creates a complete test data set for order repository tests
-   */
   static createRepositoryTestData(options?: {
     orderId?: string;
     productId?: string;
@@ -79,9 +72,6 @@ export class TestDataHelper {
     };
   }
 
-  /**
-   * Creates test data for multi-item orders
-   */
   static createMultiItemTestData(itemCount: number = 3) {
     const productIds = Array.from(
       { length: itemCount },
