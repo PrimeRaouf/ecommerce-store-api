@@ -7,6 +7,8 @@ import { GetInventoryController } from './presentation/controllers/get-inventory
 import { ListLowStockController } from './presentation/controllers/list-low-stock/list-low-stock.controller';
 import { ReleaseStockController } from './presentation/controllers/release-stock/release-stock.controller';
 import { ReserveStockController } from './presentation/controllers/reserve-stock/reserve-stock.controller';
+import { IInventory } from './domain/interfaces/inventory.interface';
+import { InventoryTestFactory } from './testing/factories/inventory.test.factory';
 
 describe('InventoryController', () => {
   let controller: InventoryController;
@@ -19,14 +21,18 @@ describe('InventoryController', () => {
   let listLowStockController: ListLowStockController;
   let bulkCheckStockController: BulkCheckStockController;
 
+  let mockInventory: IInventory;
+
   beforeEach(async () => {
+    mockInventory = InventoryTestFactory.createMockInventory();
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [InventoryController],
       providers: [
         {
           provide: GetInventoryController,
           useValue: {
-            handle: jest.fn().mockResolvedValue(undefined),
+            handle: jest.fn().mockResolvedValue(mockInventory),
           },
         },
         {

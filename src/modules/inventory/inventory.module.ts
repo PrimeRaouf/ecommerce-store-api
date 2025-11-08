@@ -18,6 +18,7 @@ import { CacheService } from '../../core/infrastructure/redis/cache/cache.servic
 import { InventoryRepository } from './domain/repositories/inventory.repository';
 import { RedisModule } from '../../core/infrastructure/redis/redis.module';
 import { InventoryEntity } from './infrastructure/orm/inventory.schema';
+import { GetInventoryUseCase } from './application/get-inventory/get-inventory.usecase';
 
 @Module({
   imports: [TypeOrmModule.forFeature([InventoryEntity]), RedisModule],
@@ -46,6 +47,9 @@ import { InventoryEntity } from './infrastructure/orm/inventory.schema';
       provide: InventoryRepository,
       useExisting: REDIS_INVENTORY_REPOSITORY,
     },
+
+    //UseCases:
+    GetInventoryUseCase,
 
     //Controllers
     GetInventoryController,
