@@ -9,12 +9,14 @@ import { Cart } from '../../../domain/entities/cart';
 import { CartRepository } from '../../../domain/repositories/cart.repository';
 import { CartEntity } from '../../orm/cart.schema';
 import { CartMapper } from '../../persistence/mappers/cart.mapper';
+import { IdGeneratorService } from '../../../../../core/infrastructure/orm/id-generator.service';
 
 @Injectable()
 export class PostgresCartRepository implements CartRepository {
   constructor(
     @InjectRepository(CartEntity)
     private readonly repository: Repository<CartEntity>,
+    private readonly idGeneratorService: IdGeneratorService,
   ) {}
 
   async findById(id: string): Promise<Result<Cart, RepositoryError>> {
@@ -78,6 +80,8 @@ export class PostgresCartRepository implements CartRepository {
   async save(cart: Cart): Promise<Result<Cart, RepositoryError>> {
     try {
       const entity = CartMapper.toEntity(cart);
+      entity.id = await this.idGeneratorService.generateCartId();
+
       const savedEntity = await this.repository.save(entity);
       return Result.success(CartMapper.toDomain(savedEntity));
     } catch (error) {

@@ -11,6 +11,7 @@ import { UpdateCartItemController } from './presentation/controllers/update-cart
 import { CartEntity } from './infrastructure/orm/cart.schema';
 import { CartItemEntity } from './infrastructure/orm/cart-item.schema';
 import { RedisModule } from '../../core/infrastructure/redis/redis.module';
+import { CoreModule } from '../../core/core.module';
 import { POSTGRES_CART_REPOSITORY, REDIS_CART_REPOSITORY } from './carts.token';
 import { PostgresCartRepository } from './infrastructure/repositories/postgres-cart-repository/postgres.cart-repository';
 import { RedisCartRepository } from './infrastructure/repositories/redis-cart-repository/redis.cart-repository';
@@ -21,6 +22,7 @@ import { CartRepository } from './domain/repositories/cart.repository';
   imports: [
     TypeOrmModule.forFeature([CartEntity, CartItemEntity]),
     RedisModule,
+    CoreModule,
   ],
   controllers: [CartsController],
   providers: [
