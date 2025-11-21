@@ -178,12 +178,23 @@ export class CartItem implements ICartItem {
   // Serialization
   toPrimitives(): ICartItem {
     return {
-      id: this._id || '',
+      id: this._id,
       productId: this._productId,
       productName: this._productName,
       price: this._price,
       quantity: this._quantity.value,
       subtotal: this.subtotal,
+      imageUrl: this._imageUrl,
+    };
+  }
+
+  get props(): CartItemProps {
+    return {
+      id: this._id,
+      productId: this._productId,
+      productName: this._productName,
+      price: this._price,
+      quantity: this._quantity.value,
       imageUrl: this._imageUrl,
     };
   }

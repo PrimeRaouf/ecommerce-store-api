@@ -266,12 +266,23 @@ export class Cart implements ICart {
     };
   }
 
-  getItemEntities(): CartItem[] {
+  getItems(): CartItem[] {
     return this._items;
   }
 
   static fromPrimitives(data: CartProps): Cart {
     return new Cart(data);
+  }
+
+  get props(): CartProps {
+    return {
+      id: this._id,
+      customerId: this._customerId,
+      sessionId: this._sessionId,
+      items: this._items,
+      createdAt: this._createdAt,
+      updatedAt: this._updatedAt,
+    };
   }
 
   static create(props: Omit<CartProps, 'createdAt' | 'updatedAt'>): Cart {
