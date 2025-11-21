@@ -144,6 +144,30 @@ describe('IdGeneratorService', () => {
     });
   });
 
+  describe('generateCartId', () => {
+    it('should generate cart ID with correct prefix and format', async () => {
+      const mockResult = [{ current_value: 123 }];
+      queryRunner.query.mockResolvedValue(mockResult);
+
+      const result = await service.generateCartId();
+
+      expect(result).toBe('CA0000123');
+      expect(queryRunner.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO id_sequences'),
+        ['CART', 'CA'],
+      );
+    });
+
+    it('should handle string values from database', async () => {
+      const mockResult = [{ current_value: '456' }];
+      queryRunner.query.mockResolvedValue(mockResult);
+
+      const result = await service.generateCartId();
+
+      expect(result).toBe('CA0000456');
+    });
+  });
+
   describe('generateId (private method)', () => {
     it('should handle large sequence numbers correctly', async () => {
       const mockResult = [{ current_value: 9999999 }];
