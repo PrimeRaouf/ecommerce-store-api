@@ -43,6 +43,10 @@ export class IdGeneratorService {
     return this.generateId('PAYMENT', 'PA');
   }
 
+  async generateCartId(): Promise<string> {
+    return this.generateId('CART', 'CA');
+  }
+
   private async generateId(
     entityType: string,
     prefix: string,
