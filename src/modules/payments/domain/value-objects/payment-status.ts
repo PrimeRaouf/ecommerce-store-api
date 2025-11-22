@@ -1,6 +1,6 @@
+// src/modules/payments/domain/value-objects/payment-status.ts
 import { DomainError } from '../../../../core/errors/domain.error';
 
-// src/modules/payments/domain/value-objects/payment-status.ts
 export enum PaymentStatusType {
   PENDING = 'PENDING',
   AUTHORIZED = 'AUTHORIZED',

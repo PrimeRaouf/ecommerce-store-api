@@ -3,7 +3,7 @@ import { Result } from '../../../../core/domain/result';
 import { DomainError } from '../../../../core/errors/domain.error';
 import { ErrorFactory } from '../../../../core/errors/error.factory';
 import { IPayment } from '../interfaces/payment.interface';
-import { Money } from '../value-objects/money';
+import { Money } from '../../../../shared/domain/value-objects/money';
 import {
   PaymentMethod,
   PaymentMethodType,
@@ -12,6 +12,8 @@ import {
   PaymentStatus,
   PaymentStatusType,
 } from '../value-objects/payment-status';
+
+import { Refund, RefundProps } from './refund';
 
 export interface PaymentProps {
   id: string;
@@ -24,6 +26,7 @@ export interface PaymentProps {
   transactionId: string | null;
   paymentMethodInfo: string | null;
   refundedAmount: number;
+  refunds: RefundProps[];
   failureReason: string | null;
   createdAt: Date | null;
   completedAt: Date | null;
@@ -40,6 +43,7 @@ export class Payment implements IPayment {
   private _transactionId: string | null;
   private _paymentMethodInfo: string | null;
   private _refundedAmount: Money;
+  private _refunds: Refund[];
   private _failureReason: string | null;
   private readonly _createdAt: Date;
   private _completedAt: Date | null;
@@ -58,6 +62,9 @@ export class Payment implements IPayment {
     this._transactionId = props.transactionId?.trim() || null;
     this._paymentMethodInfo = props.paymentMethodInfo?.trim() || null;
     this._refundedAmount = Money.from(props.refundedAmount, props.currency);
+    this._refunds = props.refunds
+      ? props.refunds.map((r) => new Refund(r))
+      : [];
     this._failureReason = props.failureReason?.trim() || null;
     this._createdAt = props.createdAt || new Date();
     this._completedAt = props.completedAt;
@@ -110,11 +117,11 @@ export class Payment implements IPayment {
     return this._amount.currency;
   }
 
-  get paymentMethod(): string {
+  get paymentMethod(): PaymentMethodType {
     return this._paymentMethod.type;
   }
 
-  get status(): string {
+  get status(): PaymentStatusType {
     return this._status.status;
   }
 
@@ -222,18 +229,18 @@ export class Payment implements IPayment {
     return Result.success(undefined);
   }
 
-  addRefund(refundAmount: number): Result<void, DomainError> {
+  addRefund(refund: Refund): Result<void, DomainError> {
     if (!this._status.canBeRefunded()) {
       return ErrorFactory.DomainError(
         'Payment cannot be refunded in current status',
       );
     }
 
-    if (refundAmount < 0) {
+    if (refund.amount < 0) {
       return ErrorFactory.DomainError('Refund amount cannot be negative');
     }
 
-    const totalRefunded = this._refundedAmount.amount + refundAmount;
+    const totalRefunded = this._refundedAmount.amount + refund.amount;
     if (totalRefunded > this._amount.amount) {
       return ErrorFactory.DomainError(
         'Total refunded amount cannot exceed payment amount',
@@ -241,6 +248,7 @@ export class Payment implements IPayment {
     }
 
     this._refundedAmount = Money.from(totalRefunded, this._amount.currency);
+    this._refunds.push(refund);
 
     // Update status based on refund amount
     if (totalRefunded === this._amount.amount) {
@@ -295,6 +303,10 @@ export class Payment implements IPayment {
     return this._paymentMethod.isCOD();
   }
 
+  get refunds(): Refund[] {
+    return this._refunds;
+  }
+
   // Serialization
   toPrimitives(): IPayment {
     return {
@@ -308,6 +320,7 @@ export class Payment implements IPayment {
       transactionId: this._transactionId,
       paymentMethodInfo: this._paymentMethodInfo,
       refundedAmount: this._refundedAmount.amount,
+      refunds: this._refunds.map((r) => r.toPrimitives()),
       failureReason: this._failureReason,
       createdAt: this._createdAt,
       completedAt: this._completedAt,
@@ -339,6 +352,7 @@ export class Payment implements IPayment {
       transactionId: null,
       paymentMethodInfo: paymentMethodInfo || null,
       refundedAmount: 0,
+      refunds: [],
       failureReason: null,
       createdAt: new Date(),
       completedAt: null,
@@ -364,6 +378,7 @@ export class Payment implements IPayment {
       transactionId: null,
       paymentMethodInfo: null,
       refundedAmount: 0,
+      refunds: [],
       failureReason: null,
       createdAt: new Date(),
       completedAt: null,

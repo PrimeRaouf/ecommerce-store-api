@@ -1,10 +1,13 @@
+import { RefundStatusType } from '../value-objects/refund-status';
+
 //src\modules\payments\domain\interfaces\refund.interface.ts
 export interface IRefund {
   id: string;
   paymentId: string;
   amount: number;
+  currency: string;
   reason: string;
-  status: string;
+  status: RefundStatusType;
   createdAt: Date;
   updatedAt: Date;
 }
