@@ -3,7 +3,7 @@ import { Result } from '../../../../core/domain/result';
 import { DomainError } from '../../../../core/errors/domain.error';
 import { ErrorFactory } from '../../../../core/errors/error.factory';
 import { IRefund } from '../interfaces/refund.interface';
-import { Money } from '../value-objects/money';
+import { Money } from '../../../../shared/domain/value-objects/money';
 import { RefundStatus, RefundStatusType } from '../value-objects/refund-status';
 
 export interface RefundProps {
@@ -142,6 +142,7 @@ export class Refund {
       id: this._id,
       paymentId: this._paymentId,
       amount: this._amount.amount,
+      currency: this._amount.currency,
       reason: this._reason,
       status: this._status.status,
       createdAt: this._createdAt,
@@ -170,5 +171,18 @@ export class Refund {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+  }
+
+  get props(): RefundProps {
+    return {
+      id: this._id,
+      paymentId: this._paymentId,
+      amount: this._amount.amount,
+      currency: this._amount.currency,
+      reason: this._reason,
+      status: this._status.status,
+      createdAt: this._createdAt,
+      updatedAt: this._updatedAt,
+    };
   }
 }

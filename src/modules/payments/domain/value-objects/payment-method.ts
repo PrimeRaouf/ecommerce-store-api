@@ -1,6 +1,6 @@
+// src/modules/payments/domain/value-objects/payment-method.ts
 import { DomainError } from '../../../../core/errors/domain.error';
 
-// src/modules/payments/domain/value-objects/payment-method.ts
 export enum PaymentMethodType {
   CREDIT_CARD = 'CREDIT_CARD',
   DEBIT_CARD = 'DEBIT_CARD',

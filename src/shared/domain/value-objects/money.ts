@@ -1,106 +1,185 @@
-// src/modules/orders/domain/value-objects/money.ts
-export class Money {
-  private readonly _value: number;
+// src/shared/domain/value-objects/money.ts
+import { Result } from '../../../core/domain/result';
+import { DomainError } from '../../../core/errors/domain.error';
+import { ErrorFactory } from '../../../core/errors/error.factory';
 
-  constructor(value: number) {
-    if (value < 0) {
-      throw new Error('Money cannot be negative');
-    }
-    if (!Number.isFinite(value)) {
-      throw new Error('Money must be a finite number');
-    }
-    // Round to 2 decimal places to avoid floating point issues
-    this._value = Math.round(value * 100) / 100;
+export class Money {
+  private readonly _amount: number;
+  private readonly _currency: string;
+
+  constructor(amount: number, currency: string = 'USD') {
+    const validationResult = this.validateProps(amount, currency);
+    if (validationResult.isFailure) throw validationResult.error;
+
+    this._amount = this.roundAmount(amount);
+    this._currency = currency.trim().toUpperCase();
   }
 
+  private validateProps(
+    amount: number,
+    currency: string,
+  ): Result<void, DomainError> {
+    if (amount < 0) {
+      return ErrorFactory.DomainError('Amount cannot be negative');
+    }
+    if (!Number.isFinite(amount)) {
+      return ErrorFactory.DomainError('Amount must be a finite number');
+    }
+    if (!currency?.trim()) {
+      return ErrorFactory.DomainError('Currency is required');
+    }
+    if (currency.trim().length !== 3) {
+      return ErrorFactory.DomainError(
+        'Currency must be a 3-letter code (ISO 4217)',
+      );
+    }
+
+    return Result.success(undefined);
+  }
+
+  private roundAmount(amount: number): number {
+    return Math.round(amount * 100) / 100;
+  }
+
+  get amount(): number {
+    return this._amount;
+  }
+
+  // Alias for backward compatibility
   get value(): number {
-    return this._value;
+    return this._amount;
+  }
+
+  get currency(): string {
+    return this._currency;
   }
 
   add(other: Money): Money {
-    return new Money(this._value + other._value);
+    if (this._currency !== other._currency) {
+      throw new DomainError(
+        `Cannot add amounts in different currencies: ${this._currency} and ${other._currency}`,
+      );
+    }
+    return new Money(this._amount + other._amount, this._currency);
   }
 
-  subtract(other: Money): Money {
-    const result = this._value - other._value;
-    if (result < 0) {
-      throw new Error('Cannot subtract more money than available');
+  subtract(other: Money): Result<Money, DomainError> {
+    if (this._currency !== other._currency) {
+      return ErrorFactory.DomainError(
+        `Cannot subtract amounts in different currencies: ${this._currency} and ${other._currency}`,
+      );
     }
-    return new Money(result);
+
+    const result = this._amount - other._amount;
+    if (result < 0) {
+      return ErrorFactory.DomainError(
+        'Cannot subtract: result would be negative',
+      );
+    }
+
+    return Result.success(new Money(result, this._currency));
   }
 
   multiply(quantity: number): Money {
     if (quantity < 0) {
-      throw new Error('Cannot multiply money by negative quantity');
+      throw new DomainError('Cannot multiply money by negative quantity');
     }
-    return new Money(this._value * quantity);
+    return new Money(this._amount * quantity, this._currency);
   }
 
   divide(divisor: number): Money {
     if (divisor <= 0) {
-      throw new Error('Cannot divide by zero or negative number');
+      throw new DomainError('Cannot divide by zero or negative number');
     }
-    return new Money(this._value / divisor);
+    return new Money(this._amount / divisor, this._currency);
   }
 
   // Comparison methods
   equals(other: Money): boolean {
-    return this._value === other._value;
+    return this._amount === other._amount && this._currency === other._currency;
   }
 
   greaterThan(other: Money): boolean {
-    return this._value > other._value;
+    this.checkCurrency(other);
+    return this._amount > other._amount;
   }
 
   greaterThanOrEqual(other: Money): boolean {
-    return this._value >= other._value;
+    this.checkCurrency(other);
+    return this._amount >= other._amount;
   }
 
   lessThan(other: Money): boolean {
-    return this._value < other._value;
+    this.checkCurrency(other);
+    return this._amount < other._amount;
   }
 
   lessThanOrEqual(other: Money): boolean {
-    return this._value <= other._value;
+    this.checkCurrency(other);
+    return this._amount <= other._amount;
   }
 
   isZero(): boolean {
-    return this._value === 0;
+    return this._amount === 0;
   }
 
   isPositive(): boolean {
-    return this._value > 0;
+    return this._amount > 0;
+  }
+
+  // Aliases for payments module compatibility
+  isGreaterThan(other: Money): boolean {
+    return this.greaterThan(other);
+  }
+
+  isGreaterThanOrEqual(other: Money): boolean {
+    return this.greaterThanOrEqual(other);
+  }
+
+  isLessThan(other: Money): boolean {
+    return this.lessThan(other);
+  }
+
+  private checkCurrency(other: Money): void {
+    if (this._currency !== other._currency) {
+      throw new DomainError('Cannot compare amounts in different currencies');
+    }
   }
 
   // Formatting methods
   toString(): string {
-    return this._value.toFixed(2);
+    return `${this._currency} ${this._amount.toFixed(2)}`;
   }
 
   toCurrency(currencySymbol: string = '$'): string {
-    return `${currencySymbol}${this.toString()}`;
+    return `${currencySymbol}${this._amount.toFixed(2)}`;
   }
 
   // Static factory methods
-  static zero(): Money {
-    return new Money(0);
+  static zero(currency: string = 'USD'): Money {
+    return new Money(0, currency);
   }
 
-  static from(value: number): Money {
-    return new Money(value);
+  static from(amount: number, currency: string = 'USD'): Money {
+    return new Money(amount, currency);
   }
 
-  static fromNumber(value: number): Money {
-    return new Money(value);
+  static fromNumber(value: number, currency: string = 'USD'): Money {
+    return new Money(value, currency);
   }
 
-  static fromCents(cents: number): Money {
-    return new Money(cents / 100);
+  static fromCents(cents: number, currency: string = 'USD'): Money {
+    return new Money(cents / 100, currency);
   }
 
   // Utility methods for calculations
   static sum(amounts: Money[]): Money {
-    return amounts.reduce((total, amount) => total.add(amount), Money.zero());
+    if (amounts.length === 0) return Money.zero();
+    const currency = amounts[0].currency;
+    return amounts.reduce(
+      (total, amount) => total.add(amount),
+      Money.zero(currency),
+    );
   }
 
   static max(a: Money, b: Money): Money {

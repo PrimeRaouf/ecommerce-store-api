@@ -1,6 +1,6 @@
+// src/modules/payments/domain/value-objects/refund-status.ts
 import { DomainError } from '../../../../core/errors/domain.error';
 
-// src/modules/payments/domain/value-objects/refund-status.ts
 export enum RefundStatusType {
   PENDING = 'PENDING',
   APPROVED = 'APPROVED',
