@@ -72,5 +72,6 @@ import { ReleaseStockUseCase } from './application/release-stock/release-stock.u
     ListLowStockController,
     BulkCheckStockController,
   ],
+  exports: [CheckStockUseCase],
 })
 export class InventoryModule {}
