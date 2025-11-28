@@ -1,14 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { Result } from '../../../../../core/domain/result';
+import { Result, isFailure } from '../../../../../core/domain/result';
 import { ControllerError } from '../../../../../core/errors/controller.error';
 import { ErrorFactory } from '../../../../../core/errors/error.factory';
+import { GetCartUseCase } from '../../../application/usecases/get-cart/get-cart.usecase';
+import { ICart } from '../../../domain/interfaces/cart.interface';
 
 @Injectable()
 export class GetCartController {
-  constructor() {}
-  async handle(id: string): Promise<Result<void, ControllerError>> {
+  constructor(private readonly getCartUseCase: GetCartUseCase) {}
+  async handle(id: string): Promise<Result<ICart, ControllerError>> {
     try {
-      return Result.success(undefined);
+      const result = await this.getCartUseCase.execute(id);
+
+      if (isFailure(result)) {
+        return ErrorFactory.ControllerError(result.error.message, result.error);
+      }
+
+      return Result.success(result.value);
     } catch (error) {
       return ErrorFactory.ControllerError('Unexpected Controller Error', error);
     }
