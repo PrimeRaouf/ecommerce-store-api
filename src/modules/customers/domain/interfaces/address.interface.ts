@@ -1,3 +1,5 @@
+import { AddressType } from '../value-objects/address-type';
+
 export interface IAddress {
   id: string;
   street: string;
@@ -6,7 +8,7 @@ export interface IAddress {
   state: string;
   postalCode: string;
   country: string;
-  type: 'HOME' | 'WORK' | 'OTHER';
+  type: AddressType;
   isDefault: boolean;
   deliveryInstructions: string | null;
   createdAt: Date;

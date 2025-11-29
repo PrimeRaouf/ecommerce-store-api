@@ -10,7 +10,7 @@ export class MockCustomerRepository implements CustomerRepository {
   findByEmail = jest.fn<Promise<Result<Customer, RepositoryError>>, [string]>();
   findByPhone = jest.fn<Promise<Result<Customer, RepositoryError>>, [string]>();
   findAll = jest.fn<
-    Promise<Result<{ items: Customer[]; total: number }, RepositoryError>>,
+    Promise<Result<Customer[], RepositoryError>>,
     [number, number]
   >();
   save = jest.fn<Promise<Result<Customer, RepositoryError>>, [Customer]>();

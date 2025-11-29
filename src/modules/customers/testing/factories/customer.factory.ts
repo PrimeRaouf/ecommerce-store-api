@@ -40,4 +40,22 @@ export class CustomerTestFactory {
       ...overrides,
     });
   }
+
+  static createMockAddress(overrides?: Partial<any>): any {
+    const baseAddress = {
+      id: 'address-123',
+      street: '123 Main St',
+      street2: null,
+      city: 'New York',
+      state: 'NY',
+      postalCode: '10001',
+      country: 'USA',
+      type: AddressType.HOME,
+      isDefault: true,
+      deliveryInstructions: null,
+      createdAt: new Date('2025-01-01T10:00:00Z'),
+      updatedAt: new Date('2025-01-01T10:00:00Z'),
+    };
+    return { ...baseAddress, ...overrides };
+  }
 }

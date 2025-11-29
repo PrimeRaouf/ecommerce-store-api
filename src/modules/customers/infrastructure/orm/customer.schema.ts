@@ -25,12 +25,6 @@ export class CustomerEntity {
   @Column({ type: 'varchar', nullable: true })
   phone: string | null;
 
-  @Column({ name: 'total_orders', type: 'int', default: 0 })
-  totalOrders: number;
-
-  @Column({ name: 'total_spent', type: 'float', default: 0 })
-  totalSpent: number;
-
   @OneToMany(() => AddressEntity, (address) => address.customer, {
     cascade: true,
     eager: true,

@@ -8,20 +8,18 @@ import { AddressType } from '../value-objects/address-type';
 import { Address, AddressProps } from './address';
 
 export interface CustomerProps {
-  id: string;
+  id: string | null;
   firstName: string;
   lastName: string;
   email: string;
   phone: string | null;
   addresses: AddressProps[];
-  totalOrders: number;
-  totalSpent: number;
   createdAt: Date | null;
   updatedAt: Date | null;
 }
 
 export class Customer implements ICustomer {
-  private readonly _id: string;
+  private readonly _id: string | null;
   private _firstName: string;
   private _lastName: string;
   private readonly _email: string;
@@ -36,7 +34,7 @@ export class Customer implements ICustomer {
     const validationResult = this.validateProps(props);
     if (validationResult.isFailure) throw validationResult.error;
 
-    this._id = props.id.trim();
+    this._id = props.id?.trim() || null;
     this._firstName = props.firstName.trim();
     this._lastName = props.lastName.trim();
     this._email = props.email.trim().toLowerCase();
@@ -44,14 +42,12 @@ export class Customer implements ICustomer {
     this._addresses = props.addresses.map((addr) =>
       Address.fromPrimitives(addr),
     );
-    this._totalOrders = props.totalOrders;
-    this._totalSpent = this.roundPrice(props.totalSpent);
     this._createdAt = props.createdAt || new Date();
     this._updatedAt = props.updatedAt || new Date();
   }
 
   private validateProps(props: CustomerProps): Result<void, DomainError> {
-    if (!props.id?.trim()) {
+    if (props.id !== null && !props.id?.trim()) {
       return ErrorFactory.DomainError('Customer ID is required');
     }
     if (!props.firstName?.trim()) {
@@ -65,12 +61,6 @@ export class Customer implements ICustomer {
     }
     if (!this.isValidEmail(props.email)) {
       return ErrorFactory.DomainError('Invalid email format');
-    }
-    if (props.totalOrders < 0) {
-      return ErrorFactory.DomainError('Total orders cannot be negative');
-    }
-    if (props.totalSpent < 0) {
-      return ErrorFactory.DomainError('Total spent cannot be negative');
     }
 
     return Result.success(undefined);
@@ -86,7 +76,7 @@ export class Customer implements ICustomer {
   }
 
   // Getters
-  get id(): string {
+  get id(): string | null {
     return this._id;
   }
 
@@ -171,9 +161,9 @@ export class Customer implements ICustomer {
     state: string,
     postalCode: string,
     country: string,
-    street2?: string,
-    type?: AddressType,
-    deliveryInstructions?: string,
+    street2: string | null,
+    type: AddressType | null,
+    deliveryInstructions: string | null,
   ): Result<void, DomainError> {
     const address = this.findAddress(addressId);
     if (!address) {
@@ -231,7 +221,7 @@ export class Customer implements ICustomer {
   updatePersonalInfo(
     firstName: string,
     lastName: string,
-    phone?: string,
+    phone: string | null,
   ): Result<void, DomainError> {
     if (!firstName?.trim()) {
       return ErrorFactory.DomainError('First name cannot be empty');
@@ -242,8 +232,8 @@ export class Customer implements ICustomer {
 
     this._firstName = firstName.trim();
     this._lastName = lastName.trim();
-    if (phone !== undefined) {
-      this._phone = phone?.trim() || null;
+    if (phone !== null) {
+      this._phone = phone.trim();
     }
     this._updatedAt = new Date();
 
@@ -283,23 +273,23 @@ export class Customer implements ICustomer {
   }
 
   static create(
-    id: string,
+    id: string | null,
     firstName: string,
     lastName: string,
     email: string,
-    phone?: string,
+    phone: string | null,
   ): Customer {
-    return new Customer({
+    const customer = new Customer({
       id,
       firstName,
       lastName,
       email,
-      phone: phone || null,
+      phone,
       addresses: [],
-      totalOrders: 0,
-      totalSpent: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+
+    return customer;
   }
 }
