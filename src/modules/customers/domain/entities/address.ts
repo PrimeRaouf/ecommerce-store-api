@@ -156,14 +156,14 @@ export class Address {
     state: string,
     postalCode: string,
     country: string,
-    street2?: string,
-    type?: AddressType,
-    deliveryInstructions?: string,
+    street2: string | null,
+    type: AddressType | null,
+    deliveryInstructions: string | null,
   ): Result<void, DomainError> {
     const updateProps: AddressProps = {
       id: this._id,
       street,
-      street2: street2 || null,
+      street2: street2?.trim() || null,
       city,
       state,
       postalCode,
@@ -226,7 +226,7 @@ export class Address {
     deliveryInstructions?: string,
     isDefault: boolean = false,
   ): Address {
-    return new Address({
+    const address = new Address({
       id: null,
       street,
       street2: street2 || null,
@@ -240,5 +240,7 @@ export class Address {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+
+    return address;
   }
 }
