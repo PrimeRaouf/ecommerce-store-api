@@ -14,7 +14,7 @@ export abstract class CustomerRepository {
   abstract findAll(
     page: number,
     limit: number,
-  ): Promise<Result<{ items: Customer[]; total: number }, RepositoryError>>;
+  ): Promise<Result<Customer[], RepositoryError>>;
   abstract save(customer: Customer): Promise<Result<Customer, RepositoryError>>;
   abstract update(
     customer: Customer,

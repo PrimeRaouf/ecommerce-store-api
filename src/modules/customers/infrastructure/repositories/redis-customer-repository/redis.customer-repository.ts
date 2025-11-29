@@ -111,7 +111,7 @@ export class RedisCustomerRepository implements CustomerRepository {
   async findAll(
     page: number,
     limit: number,
-  ): Promise<Result<{ items: Customer[]; total: number }, RepositoryError>> {
+  ): Promise<Result<Customer[], RepositoryError>> {
     try {
       const shouldUseCache = page === 1 && limit === 10;
 
@@ -136,10 +136,7 @@ export class RedisCustomerRepository implements CustomerRepository {
             const items = cachedCustomers.map((c) =>
               CustomerCacheMapper.fromCache(c),
             );
-            return Result.success({
-              items,
-              total: items.length, // Approximation as per current limitation
-            });
+            return Result.success(items);
           }
         }
       }
@@ -147,7 +144,7 @@ export class RedisCustomerRepository implements CustomerRepository {
       const dbResult = await this.postgresRepo.findAll(page, limit);
       if (dbResult.isFailure) return dbResult;
 
-      const { items } = dbResult.value;
+      const items = dbResult.value;
 
       if (shouldUseCache && items.length > 0) {
         try {

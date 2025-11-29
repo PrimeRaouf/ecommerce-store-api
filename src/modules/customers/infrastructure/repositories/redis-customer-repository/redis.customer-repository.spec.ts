@@ -63,12 +63,12 @@ describe('RedisCustomerRepository', () => {
   describe('findById', () => {
     it('should return cached customer if available', async () => {
       const customerPrimitives = CustomerTestFactory.createMockCustomer();
-      const customer = Customer.fromPrimitives(customerPrimitives as any);
+      const customer = Customer.fromPrimitives(customerPrimitives);
       const cachedCustomer = CustomerCacheMapper.toCache(customer);
 
       mockCacheService.get.mockResolvedValue(cachedCustomer);
 
-      const result = await repository.findById(customer.id);
+      const result = await repository.findById(customer.id!);
 
       expect(result.isSuccess).toBe(true);
       if (result.isSuccess) {
@@ -82,12 +82,12 @@ describe('RedisCustomerRepository', () => {
 
     it('should fetch from postgres and cache if not in redis', async () => {
       const customerPrimitives = CustomerTestFactory.createMockCustomer();
-      const customer = Customer.fromPrimitives(customerPrimitives as any);
+      const customer = Customer.fromPrimitives(customerPrimitives);
 
       mockCacheService.get.mockResolvedValue(null);
       postgresRepo.findById.mockResolvedValue(Result.success(customer));
 
-      const result = await repository.findById(customer.id);
+      const result = await repository.findById(customer.id!);
 
       expect(result.isSuccess).toBe(true);
       if (result.isSuccess) {
@@ -126,8 +126,8 @@ describe('RedisCustomerRepository', () => {
 
       expect(result.isSuccess).toBe(true);
       if (result.isSuccess) {
-        expect(result.value.items.length).toBe(1);
-        expect(result.value.items[0].id).toBe(customer.id);
+        expect(result.value.length).toBe(1);
+        expect(result.value[0].id).toBe(customer.id);
       }
       expect(mockCacheService.get).toHaveBeenCalledWith(
         CUSTOMER_REDIS.IS_CACHED_FLAG,
@@ -145,16 +145,14 @@ describe('RedisCustomerRepository', () => {
       const customer = Customer.fromPrimitives(customerPrimitives as any);
 
       mockCacheService.get.mockResolvedValue(null); // Flag not set
-      postgresRepo.findAll.mockResolvedValue(
-        Result.success({ items: [customer], total: 1 }),
-      );
+      postgresRepo.findAll.mockResolvedValue(Result.success([customer]));
 
       const result = await repository.findAll(1, 10);
 
       expect(result.isSuccess).toBe(true);
       if (result.isSuccess) {
-        expect(result.value.items.length).toBe(1);
-        expect(result.value.items[0].id).toBe(customer.id);
+        expect(result.value.length).toBe(1);
+        expect(result.value[0].id).toBe(customer.id);
       }
       expect(postgresRepo.findAll).toHaveBeenCalledWith(1, 10);
 
@@ -171,11 +169,9 @@ describe('RedisCustomerRepository', () => {
       const customerPrimitives = CustomerTestFactory.createMockCustomer();
       const customer = Customer.fromPrimitives(customerPrimitives as any);
 
-      postgresRepo.findAll.mockResolvedValue(
-        Result.success({ items: [customer], total: 1 }),
-      );
+      postgresRepo.findAll.mockResolvedValue(Result.success([customer]));
 
-      const result = await repository.findAll(2, 10); // Page 2
+      const result = await repository.findAll(2, 10);
 
       expect(result.isSuccess).toBe(true);
       expect(mockCacheService.get).not.toHaveBeenCalledWith(

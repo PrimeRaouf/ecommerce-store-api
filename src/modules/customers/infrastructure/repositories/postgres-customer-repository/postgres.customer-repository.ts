@@ -8,12 +8,14 @@ import { Customer } from '../../../domain/entities/customer';
 import { CustomerRepository } from '../../../domain/repositories/customer.repository';
 import { CustomerEntity } from '../../orm/customer.schema';
 import { CustomerMapper } from '../../persistence/mappers/customer.mapper';
+import { IdGeneratorService } from '../../../../../core/infrastructure/orm/id-generator.service';
 
 @Injectable()
 export class PostgresCustomerRepository implements CustomerRepository {
   constructor(
     @InjectRepository(CustomerEntity)
     private readonly repository: Repository<CustomerEntity>,
+    private readonly idGenerator: IdGeneratorService,
   ) {}
 
   async findById(id: string): Promise<Result<Customer, RepositoryError>> {
@@ -73,9 +75,9 @@ export class PostgresCustomerRepository implements CustomerRepository {
   async findAll(
     page: number,
     limit: number,
-  ): Promise<Result<{ items: Customer[]; total: number }, RepositoryError>> {
+  ): Promise<Result<Customer[], RepositoryError>> {
     try {
-      const [entities, total] = await this.repository.findAndCount({
+      const entities = await this.repository.find({
         skip: (page - 1) * limit,
         take: limit,
         order: { createdAt: 'DESC' },
@@ -83,7 +85,7 @@ export class PostgresCustomerRepository implements CustomerRepository {
 
       const items = entities.map((entity) => CustomerMapper.toDomain(entity));
 
-      return Result.success({ items, total });
+      return Result.success(items);
     } catch (error) {
       return ErrorFactory.RepositoryError('Failed to find customers', error);
     }
@@ -91,7 +93,26 @@ export class PostgresCustomerRepository implements CustomerRepository {
 
   async save(customer: Customer): Promise<Result<Customer, RepositoryError>> {
     try {
-      const entity = CustomerMapper.toEntity(customer);
+      const customerPrimitives = customer.toPrimitives();
+      if (!customerPrimitives.id || customerPrimitives.id === '') {
+        customerPrimitives.id = await this.idGenerator.generateCustomerId();
+      }
+
+      const addressesWithIds = await Promise.all(
+        customerPrimitives.addresses.map(async (addr) => {
+          if (!addr.id || addr.id === '') {
+            return {
+              ...addr,
+              id: await this.idGenerator.generateShippingAddressId(),
+            };
+          }
+          return addr;
+        }),
+      );
+      customerPrimitives.addresses = addressesWithIds;
+
+      const customerWithIds = Customer.fromPrimitives(customerPrimitives);
+      const entity = CustomerMapper.toEntity(customerWithIds);
       const savedEntity = await this.repository.save(entity);
       return Result.success(CustomerMapper.toDomain(savedEntity));
     } catch (error) {
@@ -101,7 +122,24 @@ export class PostgresCustomerRepository implements CustomerRepository {
 
   async update(customer: Customer): Promise<Result<Customer, RepositoryError>> {
     try {
-      const entity = CustomerMapper.toEntity(customer);
+      const customerPrimitives = customer.toPrimitives();
+      const addressesWithIds = await Promise.all(
+        customerPrimitives.addresses.map(async (addr) => {
+          if (!addr.id || addr.id === '') {
+            return {
+              ...addr,
+              id: await this.idGenerator.generateShippingAddressId(),
+            };
+          }
+          return addr;
+        }),
+      );
+      customerPrimitives.addresses = addressesWithIds;
+
+      const customerWithIds = Customer.fromPrimitives(
+        customerPrimitives as any,
+      );
+      const entity = CustomerMapper.toEntity(customerWithIds);
       const savedEntity = await this.repository.save(entity);
       return Result.success(CustomerMapper.toDomain(savedEntity));
     } catch (error) {
