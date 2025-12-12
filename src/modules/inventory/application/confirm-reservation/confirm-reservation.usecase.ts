@@ -7,7 +7,7 @@ import { ReservationRepository } from '../../domain/repositories/reservation.rep
 import { POSTGRES_RESERVATION_REPOSITORY } from '../../inventory.token';
 
 @Injectable()
-export class ReleaseStockUseCase
+export class ConfirmReservationUseCase
   implements UseCase<string, void, UseCaseError>
 {
   constructor(
@@ -22,11 +22,11 @@ export class ReleaseStockUseCase
       if (reservationResult.isFailure) return reservationResult;
 
       const reservation = reservationResult.value;
-      const releaseResult = reservation.release();
+      const confirmResult = reservation.confirm();
 
-      if (releaseResult.isFailure) return releaseResult;
+      if (confirmResult.isFailure) return confirmResult;
 
-      const saveResult = await this.reservationRepository.release(reservation);
+      const saveResult = await this.reservationRepository.confirm(reservation);
 
       if (saveResult.isFailure) return saveResult;
 

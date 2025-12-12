@@ -25,9 +25,22 @@ import { BulkCheckStockUseCase } from './application/bulk-check-stock/bulk-check
 import { CheckStockUseCase } from './application/check-stock/check-stock.usecase';
 import { ListLowStockUseCase } from './application/list-low-stock/list-low-stock.usecase';
 import { ReleaseStockUseCase } from './application/release-stock/release-stock.usecase';
+import { ConfirmReservationUseCase } from './application/confirm-reservation/confirm-reservation.usecase';
+import { ReservationEntity } from './infrastructure/orm/reservation.schema';
+import { ReservationItemEntity } from './infrastructure/orm/reservation-item.schema';
+import { POSTGRES_RESERVATION_REPOSITORY } from './inventory.token';
+import { PostgresReservationRepository } from './infrastructure/repositories/postgres-reservation-repository/postgres.reservation-repository';
+import { ReservationRepository } from './domain/repositories/reservation.repository';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([InventoryEntity]), RedisModule],
+  imports: [
+    TypeOrmModule.forFeature([
+      InventoryEntity,
+      ReservationEntity,
+      ReservationItemEntity,
+    ]),
+    RedisModule,
+  ],
   controllers: [InventoryController],
   providers: [
     //Postgres Repo
@@ -54,6 +67,16 @@ import { ReleaseStockUseCase } from './application/release-stock/release-stock.u
       useExisting: REDIS_INVENTORY_REPOSITORY,
     },
 
+    // Reservation Repository
+    {
+      provide: POSTGRES_RESERVATION_REPOSITORY,
+      useClass: PostgresReservationRepository,
+    },
+    {
+      provide: ReservationRepository,
+      useExisting: POSTGRES_RESERVATION_REPOSITORY,
+    },
+
     //UseCases:
     GetInventoryUseCase,
     AdjustStockUseCase,
@@ -62,6 +85,7 @@ import { ReleaseStockUseCase } from './application/release-stock/release-stock.u
     CheckStockUseCase,
     ListLowStockUseCase,
     BulkCheckStockUseCase,
+    ConfirmReservationUseCase,
 
     //Controllers
     GetInventoryController,
@@ -72,6 +96,11 @@ import { ReleaseStockUseCase } from './application/release-stock/release-stock.u
     ListLowStockController,
     BulkCheckStockController,
   ],
-  exports: [CheckStockUseCase],
+  exports: [
+    CheckStockUseCase,
+    ReserveStockUseCase,
+    ReleaseStockUseCase,
+    ConfirmReservationUseCase,
+  ],
 })
 export class InventoryModule {}
