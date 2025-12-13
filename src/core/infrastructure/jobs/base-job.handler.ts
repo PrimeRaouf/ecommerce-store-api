@@ -6,7 +6,9 @@ import { AppError } from '../../errors/app.error';
 export abstract class BaseJobHandler<TData, TResult> {
   protected abstract readonly logger: Logger;
 
-  protected abstract onExecute(data: TData): Promise<Result<TResult, AppError>>;
+  protected abstract onExecute(
+    job: Job<TData>,
+  ): Promise<Result<TResult, AppError>>;
 
   async handle(job: Job<TData>): Promise<TResult> {
     const jobName = job.name || this.constructor.name;
@@ -14,7 +16,6 @@ export abstract class BaseJobHandler<TData, TResult> {
     const attemptsMade = job.attemptsMade || 0;
     const maxAttempts = job.opts?.attempts || 1;
 
-    // Log with retry context
     if (attemptsMade > 0) {
       this.logger.log(
         `Starting job ${jobName} (ID: ${jobId}) - Retry attempt ${attemptsMade}/${maxAttempts}`,
@@ -24,7 +25,7 @@ export abstract class BaseJobHandler<TData, TResult> {
     }
 
     try {
-      const result = await this.onExecute(job.data);
+      const result = await this.onExecute(job);
 
       if (result.isFailure) {
         const willRetry =
