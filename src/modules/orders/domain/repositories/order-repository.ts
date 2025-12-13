@@ -7,9 +7,7 @@ import { AggregatedOrderInput } from '../factories/order.factory';
 import { OrderStatus } from '../value-objects/order-status';
 
 export abstract class OrderRepository {
-  abstract save(
-    createOrderDto: AggregatedOrderInput,
-  ): Promise<Result<Order, RepositoryError>>;
+  abstract save(order: Order): Promise<Result<Order, RepositoryError>>;
   abstract updateStatus(
     id: string,
     status: OrderStatus,
