@@ -5,8 +5,14 @@ import { getRetryPolicy } from './job-retry-policies';
 import { RetryStrategy } from './retry-strategy';
 import { RetryConfig } from './retry-config';
 
+import { v4 as uuidv4 } from 'uuid';
+
 @Injectable()
 export class JobConfigService {
+  generateJobId(jobName: JobName): string {
+    return `${jobName}-${uuidv4()}`;
+  }
+
   getJobId(jobName: JobName, identifier: string | number): string {
     return `${jobName}-${identifier}`;
   }
