@@ -7,6 +7,7 @@ import { PaymentRepository } from '../../../domain/repositories/payment.reposito
 import { ProcessRefundDto } from '../../../presentation/dto/process-refund.dto';
 import { Refund } from '../../../domain/entities/refund';
 import { IPayment } from '../../../domain/interfaces/payment.interface';
+import { PaymentGatewayFactory } from '../../../infrastructure/gateways/payment-gateway.factory';
 
 @Injectable()
 export class ProcessRefundUseCase extends UseCase<
@@ -14,7 +15,10 @@ export class ProcessRefundUseCase extends UseCase<
   IPayment,
   UseCaseError
 > {
-  constructor(private readonly paymentRepository: PaymentRepository) {
+  constructor(
+    private readonly paymentRepository: PaymentRepository,
+    private readonly paymentGatewayFactory: PaymentGatewayFactory,
+  ) {
     super();
   }
 
@@ -27,6 +31,37 @@ export class ProcessRefundUseCase extends UseCase<
       if (isFailure(paymentResult)) return paymentResult;
 
       const payment = paymentResult.value;
+
+      // 1. Get Gateway
+      const gateway = this.paymentGatewayFactory.getGateway(
+        payment.paymentMethod,
+      );
+
+      // 2. Refund via Gateway
+      // We need transaction ID to refund.
+      if (!payment.transactionId) {
+        return ErrorFactory.UseCaseError(
+          'Cannot refund payment without transaction ID',
+        );
+      }
+
+      const gatewayResult = await gateway.refund(
+        payment.transactionId,
+        input.dto.amount,
+      );
+      if (isFailure(gatewayResult)) {
+        return ErrorFactory.UseCaseError(
+          `Gateway refund failed: ${gatewayResult.error.message}`,
+          gatewayResult.error,
+        );
+      }
+
+      const refundResult = gatewayResult.value;
+      if (!refundResult.success) {
+        return ErrorFactory.UseCaseError(
+          `Gateway refund failed: ${refundResult.errorMessage || 'Unknown error'}`,
+        );
+      }
 
       const refund = Refund.create(
         null,
