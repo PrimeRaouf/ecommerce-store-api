@@ -11,10 +11,7 @@ import { IOrder } from '../../domain/interfaces/order.interface';
 
 export class MockOrderRepository implements OrderRepository {
   // Jest mock functions
-  save = jest.fn<
-    Promise<Result<Order, RepositoryError>>,
-    [AggregatedOrderInput]
-  >();
+  save = jest.fn<Promise<Result<Order, RepositoryError>>, [Order]>();
   updateStatus = jest.fn<
     Promise<Result<void, RepositoryError>>,
     [string, OrderStatus]

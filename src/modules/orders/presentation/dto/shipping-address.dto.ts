@@ -12,11 +12,19 @@ export class ShippingAddressDto {
   lastName: string;
 
   @ApiProperty({
-    example: '123 Main Street, Apt 4B',
+    example: '123 Main Street',
     description: 'Street address',
   })
   @IsString()
   street: string;
+
+  @ApiPropertyOptional({
+    example: 'Apt 4B',
+    description: 'Street address line 2',
+  })
+  @IsOptional()
+  @IsString()
+  street2?: string;
 
   @ApiProperty({ example: 'New York', description: 'City' })
   @IsString()
@@ -44,4 +52,12 @@ export class ShippingAddressDto {
   @IsOptional()
   @IsString()
   phone?: string;
+
+  @ApiPropertyOptional({
+    example: 'Leave at front door',
+    description: 'Delivery instructions',
+  })
+  @IsOptional()
+  @IsString()
+  deliveryInstructions?: string;
 }

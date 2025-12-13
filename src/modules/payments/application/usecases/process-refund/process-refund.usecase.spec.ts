@@ -8,6 +8,7 @@ import { ResultAssertionHelper } from '../../../../../testing';
 import { PaymentMapper } from '../../../infrastructure/persistence/mappers/payment.mapper';
 import { Result } from '../../../../../core/domain/result';
 import { UseCaseError } from '../../../../../core/errors/usecase.error';
+import { PaymentGatewayFactory } from '../../../infrastructure/gateways/payment-gateway.factory';
 
 describe('ProcessRefundUseCase', () => {
   let useCase: ProcessRefundUseCase;
@@ -21,6 +22,12 @@ describe('ProcessRefundUseCase', () => {
           provide: PaymentRepository,
           useClass: MockPaymentRepository,
         },
+        {
+          provide: PaymentGatewayFactory,
+          useValue: {
+            getGateway: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -28,6 +35,18 @@ describe('ProcessRefundUseCase', () => {
     paymentRepository = module.get<PaymentRepository>(
       PaymentRepository,
     ) as unknown as MockPaymentRepository;
+
+    const factory = module.get(PaymentGatewayFactory);
+    (factory.getGateway as jest.Mock).mockReturnValue({
+      refund: jest.fn().mockResolvedValue({
+        isFailure: false,
+        isSuccess: true,
+        value: {
+          success: true,
+          transactionId: 'txn_refund_123',
+        },
+      }),
+    });
   });
 
   afterEach(() => {

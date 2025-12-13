@@ -48,11 +48,13 @@ export class OrderEntityTestFactory {
       firstName: 'John',
       lastName: 'Doe',
       street: '123 Main Street',
+      street2: null,
       city: 'New York',
       state: 'NY',
       postalCode: '10001',
       country: 'dz',
       phone: '+1234567890',
+      deliveryInstructions: null,
     };
 
     return { ...defaultEntity, ...overrides };

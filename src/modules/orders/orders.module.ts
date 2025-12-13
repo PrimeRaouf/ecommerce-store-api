@@ -1,5 +1,6 @@
 import { Logger, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bullmq';
 
 import { OrdersController } from './orders.controller';
 import { GetOrderController } from './presentation/controllers/get-order/get-order.controller';
@@ -17,8 +18,6 @@ import { OrderEntity } from './infrastructure/orm/order.schema';
 import { CacheService } from '../../core/infrastructure/redis/cache/cache.service';
 import { RedisModule } from '../../core/infrastructure/redis/redis.module';
 import { OrderItemEntity } from './infrastructure/orm/order-item.schema';
-import { CreateOrderController } from './presentation/controllers/create-order/create-order.controller';
-import { CreateOrderUseCase } from './application/usecases/create-order/create-order.usecase';
 import { OrderFactory } from './domain/factories/order.factory';
 import { ListOrdersController } from './presentation/controllers/list-orders/list-orders.controller';
 import { ListOrdersUsecase } from './application/usecases/list-orders/list-orders.usecase';
@@ -34,6 +33,26 @@ import { DeliverOrderUseCase } from './application/usecases/deliver-order/delive
 import { ProcessOrderUseCase } from './application/usecases/process-order/process-order.usecase';
 import { ProcessOrderController } from './presentation/controllers/process-order/process-order.controller';
 import { PaymentsModule } from '../payments/payments.module';
+import { CheckoutController } from './presentation/controllers/checkout/checkout.controller';
+import { CheckoutUseCase } from './application/usecases/checkout/checkout.usecase';
+import { CreateOrderFromCartUseCase } from './application/usecases/create-order-from-cart/create-order-from-cart.usecase';
+import { OrderScheduler } from './domain/schedulers/order.scheduler';
+import { BullMqOrderScheduler } from './infrastructure/schedulers/bullmq-checkout.scheduler';
+import { CustomersModule } from '../customers/customers.module';
+import { OrdersProcessor } from './orders.processor';
+import { ValidateCartStep } from './presentation/jobs/validate-cart.job';
+import { ReserveStockStep } from './presentation/jobs/reserve-stock.job';
+import { CreateOrderStep } from './presentation/jobs/create-order.job';
+import { ProcessPaymentStep } from './presentation/jobs/process-payment.job';
+import { ConfirmReservationStep } from './presentation/jobs/confirm-reservation.job';
+import { ClearCartStep } from './presentation/jobs/clear-cart.job';
+import { ReleaseStockStep } from './presentation/jobs/release-stock.job';
+import { CancelOrderStep } from './presentation/jobs/cancel-order.job';
+import { RefundPaymentStep } from './presentation/jobs/refund-payment.job';
+import { FinalizeCheckoutStep } from './presentation/jobs/finalize-checkout.job';
+import { CheckoutFailureListener } from './presentation/listeners/checkout-failure.listener';
+import { CartsModule } from '../carts/carts.module';
+import { InventoryModule } from '../inventory/inventory.module';
 
 @Module({
   imports: [
@@ -44,6 +63,12 @@ import { PaymentsModule } from '../payments/payments.module';
     ]),
     RedisModule,
     PaymentsModule,
+    CustomersModule,
+    CartsModule,
+    InventoryModule,
+    BullModule.registerQueue({
+      name: 'checkout',
+    }),
   ],
 
   controllers: [OrdersController],
@@ -74,11 +99,16 @@ import { PaymentsModule } from '../payments/payments.module';
       useExisting: REDIS_ORDER_REPOSITORY,
     },
 
+    // Schedulers
+    {
+      provide: OrderScheduler,
+      useClass: BullMqOrderScheduler,
+    },
+
     // Domain
     OrderFactory,
 
     // Use cases
-    CreateOrderUseCase,
     GetOrderUseCase,
     ListOrdersUsecase,
     CancelOrderUseCase,
@@ -86,9 +116,11 @@ import { PaymentsModule } from '../payments/payments.module';
     DeliverOrderUseCase,
     ShipOrderUseCase,
     ProcessOrderUseCase,
+    CheckoutUseCase,
+    CreateOrderFromCartUseCase,
 
     // Controllers
-    CreateOrderController,
+    CheckoutController,
     GetOrderController,
     ListOrdersController,
     CancelOrderController,
@@ -96,6 +128,22 @@ import { PaymentsModule } from '../payments/payments.module';
     DeliverOrderController,
     ShipOrderController,
     ProcessOrderController,
+
+    // Saga Steps
+    ValidateCartStep,
+    ReserveStockStep,
+    CreateOrderStep,
+    ProcessPaymentStep,
+    ConfirmReservationStep,
+    ClearCartStep,
+    ReleaseStockStep,
+    CancelOrderStep,
+    RefundPaymentStep,
+    FinalizeCheckoutStep,
+
+    // Processor & Listeners
+    OrdersProcessor,
+    CheckoutFailureListener,
   ],
 })
 export class OrdersModule {}
