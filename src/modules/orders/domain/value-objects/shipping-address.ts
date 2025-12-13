@@ -6,11 +6,13 @@ export interface ShippingAddressProps {
   firstName: string;
   lastName: string;
   street: string;
+  street2: string | null;
   city: string;
   state: string;
   postalCode: string;
   country: string;
   phone: string | null;
+  deliveryInstructions: string | null;
 }
 
 export class ShippingAddress implements IShippingAddress {
@@ -18,11 +20,13 @@ export class ShippingAddress implements IShippingAddress {
   private readonly _firstName: string;
   private readonly _lastName: string;
   private readonly _street: string;
+  private readonly _street2: string | null;
   private readonly _city: string;
   private readonly _state: string;
   private readonly _postalCode: string;
   private readonly _country: string;
   private readonly _phone: string | null;
+  private readonly _deliveryInstructions: string | null;
 
   constructor(props: ShippingAddressProps) {
     this.validateRequiredFields(props);
@@ -32,11 +36,15 @@ export class ShippingAddress implements IShippingAddress {
     this._firstName = props.firstName.trim();
     this._lastName = props.lastName.trim();
     this._street = props.street.trim();
+    this._street2 = props.street2 ? props.street2.trim() : null;
     this._city = props.city.trim();
     this._state = props.state.trim();
     this._postalCode = props.postalCode.trim();
     this._country = props.country.trim().toLowerCase();
     this._phone = props.phone ? props.phone.trim() : null;
+    this._deliveryInstructions = props.deliveryInstructions
+      ? props.deliveryInstructions.trim()
+      : null;
   }
 
   private validateRequiredFields(props: ShippingAddressProps): void {
@@ -105,6 +113,10 @@ export class ShippingAddress implements IShippingAddress {
     return this._street;
   }
 
+  get street2(): string | null {
+    return this._street2;
+  }
+
   get city(): string {
     return this._city;
   }
@@ -125,10 +137,15 @@ export class ShippingAddress implements IShippingAddress {
     return this._phone;
   }
 
+  get deliveryInstructions(): string | null {
+    return this._deliveryInstructions;
+  }
+
   getFormattedAddress(): string {
     const lines = [
       this.fullName,
       this._street,
+      ...(this._street2 ? [this._street2] : []),
       `${this._city}, ${this._state} ${this._postalCode}`,
       this._country.toUpperCase(),
     ];
@@ -147,11 +164,13 @@ export class ShippingAddress implements IShippingAddress {
       this._firstName === other._firstName &&
       this._lastName === other._lastName &&
       this._street === other._street &&
+      this._street2 === other._street2 &&
       this._city === other._city &&
       this._state === other._state &&
       this._postalCode === other._postalCode &&
       this._country === other._country &&
-      this._phone === other._phone
+      this._phone === other._phone &&
+      this._deliveryInstructions === other._deliveryInstructions
     );
   }
 
@@ -161,11 +180,13 @@ export class ShippingAddress implements IShippingAddress {
       firstName: this._firstName,
       lastName: this._lastName,
       street: this._street,
+      street2: this._street2,
       city: this._city,
       state: this._state,
       postalCode: this._postalCode,
       country: this._country,
       phone: this._phone,
+      deliveryInstructions: this._deliveryInstructions,
     };
   }
 
