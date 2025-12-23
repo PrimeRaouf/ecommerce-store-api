@@ -7,7 +7,7 @@ import { ReservationStatus } from '../../domain/value-objects/reservation-status
 export class ReservationTestFactory {
   static createReservation(overrides?: Partial<ReservationProps>): Reservation {
     const defaultProps: ReservationProps = {
-      id: 'RES0000001',
+      id: '1',
       orderId: 'OR0000001',
       items: [
         {

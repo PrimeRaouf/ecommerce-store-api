@@ -2,7 +2,7 @@
 import { IProduct } from '../interfaces/product.interface';
 
 export interface ProductProps {
-  id: string;
+  id: string | null;
   name: string;
   description?: string;
   price: number;
@@ -23,7 +23,7 @@ export class Product implements IProduct {
   constructor(props: ProductProps) {
     this.validateProps(props);
 
-    this._id = props.id.trim();
+    this._id = props.id ? props.id.trim() : '';
     this._name = props.name.trim();
     this._description = props.description?.trim();
     this._price = this.roundPrice(props.price);
@@ -33,9 +33,7 @@ export class Product implements IProduct {
   }
 
   private validateProps(props: ProductProps): void {
-    if (!props.id?.trim()) {
-      throw new Error('Product ID is required');
-    }
+    // ID can be null initially
     if (!props.name?.trim()) {
       throw new Error('Product name is required');
     }
@@ -143,7 +141,7 @@ export class Product implements IProduct {
 
   static create(
     props: Omit<ProductProps, 'id' | 'createdAt' | 'updatedAt'> & {
-      id: string;
+      id: string | null;
     },
   ): Product {
     return new Product({

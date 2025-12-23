@@ -7,7 +7,7 @@ import { ReservationItem, ReservationItemProps } from './reservation-item';
 import { IReservationItem } from '../interfaces/reservation-item.interface';
 
 export interface ReservationProps {
-  id: string;
+  id: string | null;
   orderId: string;
   items: ReservationItemProps[];
   status: ReservationStatus;
@@ -17,7 +17,7 @@ export interface ReservationProps {
 }
 
 export class Reservation implements IReservation {
-  private readonly _id: string;
+  private readonly _id: string | null;
   private readonly _orderId: string;
   private readonly _items: ReservationItem[];
   private _status: ReservationStatus;
@@ -63,7 +63,7 @@ export class Reservation implements IReservation {
     return Result.success(undefined);
   }
 
-  get id(): string {
+  get id(): string | null {
     return this._id;
   }
 
@@ -170,7 +170,6 @@ export class Reservation implements IReservation {
   }
 
   public static create(props: {
-    id: string;
     orderId: string;
     items: ReservationItemProps[];
     ttlMinutes: number;
@@ -179,7 +178,7 @@ export class Reservation implements IReservation {
     expiresAt.setMinutes(expiresAt.getMinutes() + props.ttlMinutes);
 
     const reservation = new Reservation({
-      id: props.id,
+      id: null,
       orderId: props.orderId,
       items: props.items,
       status: ReservationStatus.PENDING,

@@ -13,7 +13,7 @@ export type ReservationItemCreate = CreateFromEntity<
 export class ReservationItemMapper {
   static toDomain(entity: ReservationItemEntity): ReservationItem {
     const props: ReservationItemProps = {
-      id: entity.id,
+      id: entity.id.toString(),
       productId: entity.productId,
       quantity: entity.quantity,
     };
@@ -25,7 +25,7 @@ export class ReservationItemMapper {
   static toEntity(domain: ReservationItem): ReservationItemEntity {
     const primitives = domain.toPrimitives();
     const payload: ReservationItemCreate = {
-      id: primitives.id,
+      id: primitives.id ? parseInt(primitives.id, 10) : 0,
       productId: primitives.productId,
       quantity: primitives.quantity,
     };

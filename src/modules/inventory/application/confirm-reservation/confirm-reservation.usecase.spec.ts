@@ -41,7 +41,7 @@ describe('ConfirmReservationUseCase', () => {
       reservationRepository.mockSuccessfulFindById(reservation);
       reservationRepository.mockSuccessfulConfirm(reservation);
 
-      const result = await useCase.execute(reservation.id);
+      const result = await useCase.execute(reservation.id!);
 
       expect(result.isSuccess).toBe(true);
       expect(reservationRepository.findById).toHaveBeenCalledWith(
@@ -73,7 +73,7 @@ describe('ConfirmReservationUseCase', () => {
       });
       reservationRepository.mockSuccessfulFindById(reservation);
 
-      const result = await useCase.execute(reservation.id);
+      const result = await useCase.execute(reservation.id!);
 
       expect(result.isFailure).toBe(true);
       if (result.isFailure) {
@@ -89,7 +89,7 @@ describe('ConfirmReservationUseCase', () => {
       const reservation = ReservationTestFactory.createConfirmedReservation();
       reservationRepository.mockSuccessfulFindById(reservation);
 
-      const result = await useCase.execute(reservation.id);
+      const result = await useCase.execute(reservation.id!);
 
       expect(result.isFailure).toBe(true);
       if (result.isFailure) {
@@ -107,7 +107,7 @@ describe('ConfirmReservationUseCase', () => {
       reservationRepository.mockSuccessfulFindById(reservation);
       reservationRepository.mockConfirmFailure(errorMessage);
 
-      const result = await useCase.execute(reservation.id);
+      const result = await useCase.execute(reservation.id!);
 
       expect(result.isFailure).toBe(true);
       if (result.isFailure) {

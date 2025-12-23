@@ -1,5 +1,5 @@
 export interface IReservationItem {
-  id: string;
+  id: string | null;
   productId: string;
   quantity: number;
 }

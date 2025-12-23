@@ -27,14 +27,6 @@ export class IdGeneratorService {
     return this.generateId('PRODUCT', 'PR');
   }
 
-  async generateInventoryId(): Promise<string> {
-    return this.generateId('INVENTORY', 'IN');
-  }
-
-  async generateReservationId(): Promise<string> {
-    return this.generateId('RESERVATION', 'RS');
-  }
-
   async generateCustomerId(): Promise<string> {
     return this.generateId('CUSTOMER', 'CU');
   }

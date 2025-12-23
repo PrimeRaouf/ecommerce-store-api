@@ -2,7 +2,7 @@ import { ReservationStatus } from '../value-objects/reservation-status';
 import { IReservationItem } from './reservation-item.interface';
 
 export interface IReservation {
-  id: string;
+  id: string | null;
   orderId: string;
   items: IReservationItem[];
   status: ReservationStatus;

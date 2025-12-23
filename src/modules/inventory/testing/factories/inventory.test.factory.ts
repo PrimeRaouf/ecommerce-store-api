@@ -4,7 +4,7 @@ import { IInventory } from '../../domain/interfaces/inventory.interface';
 export class InventoryTestFactory {
   static createMockInventory(overrides?: Partial<IInventory>): IInventory {
     const baseInventory: IInventory = {
-      id: 'IN0000001',
+      id: '1',
       productId: 'PR0000001',
       availableQuantity: 100,
       reservedQuantity: 10,
@@ -84,7 +84,7 @@ export class InventoryTestFactory {
   static createMultipleInventories(count: number): IInventory[] {
     return Array.from({ length: count }, (_, i) =>
       this.createMockInventory({
-        id: `IN${(i + 1).toString().padStart(7, '0')}`,
+        id: (i + 1).toString(),
         productId: `PR${(i + 1).toString().padStart(7, '0')}`,
         availableQuantity: (i + 1) * 10,
         reservedQuantity: i,

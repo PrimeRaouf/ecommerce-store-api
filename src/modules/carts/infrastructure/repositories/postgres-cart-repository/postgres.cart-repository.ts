@@ -9,7 +9,6 @@ import { Cart } from '../../../domain/entities/cart';
 import { CartRepository } from '../../../domain/repositories/cart.repository';
 import { CartEntity } from '../../orm/cart.schema';
 import { CartMapper } from '../../persistence/mappers/cart.mapper';
-import { IdGeneratorService } from '../../../../../core/infrastructure/orm/id-generator.service';
 
 import { CreateCartDto } from '../../../presentation/dto/create-cart.dto';
 
@@ -18,13 +17,12 @@ export class PostgresCartRepository implements CartRepository {
   constructor(
     @InjectRepository(CartEntity)
     private readonly repository: Repository<CartEntity>,
-    private readonly idGeneratorService: IdGeneratorService,
   ) {}
 
   async findById(id: string): Promise<Result<Cart, RepositoryError>> {
     try {
       const entity = await this.repository.findOne({
-        where: { id },
+        where: { id: parseInt(id, 10) },
       });
 
       if (!entity) {
@@ -81,15 +79,17 @@ export class PostgresCartRepository implements CartRepository {
 
   async create(dto: CreateCartDto): Promise<Result<Cart, RepositoryError>> {
     try {
-      const id = await this.idGeneratorService.generateCartId();
       let cart: Cart;
 
       if (dto.customerId) {
-        cart = Cart.createUserCart(id, dto.customerId);
-      } else if (dto.sessionId) {
-        cart = Cart.createGuestCart(id, dto.sessionId);
+        cart = Cart.createUserCart(dto.customerId);
       } else {
-        cart = Cart.createGuestCart(id, id);
+        if (!dto.sessionId) {
+          return ErrorFactory.RepositoryError(
+            'Session ID required for guest cart',
+          );
+        }
+        cart = Cart.createGuestCart(dto.sessionId);
       }
 
       const entity = CartMapper.toEntity(cart);
@@ -112,7 +112,7 @@ export class PostgresCartRepository implements CartRepository {
 
   async delete(id: string): Promise<Result<void, RepositoryError>> {
     try {
-      const result = await this.repository.delete(id);
+      const result = await this.repository.delete(parseInt(id, 10));
       if (result.affected === 0) {
         return ErrorFactory.RepositoryError('Cart not found');
       }
@@ -137,8 +137,10 @@ export class PostgresCartRepository implements CartRepository {
       const saveResult = await this.update(userCart);
       if (saveResult.isFailure) return saveResult;
 
-      const deleteResult = await this.delete(guestCart.id);
-      if (deleteResult.isFailure) return deleteResult;
+      if (guestCart.id) {
+        const deleteResult = await this.delete(guestCart.id);
+        if (deleteResult.isFailure) return deleteResult;
+      }
 
       return Result.success(saveResult.value);
     } catch (error) {

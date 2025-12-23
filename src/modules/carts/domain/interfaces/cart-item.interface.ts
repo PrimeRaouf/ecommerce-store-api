@@ -1,7 +1,7 @@
 // src/modules/carts/domain/interfaces/cart-item.interface.ts
 
 export interface ICartItem {
-  id: string;
+  id: string | null;
   productId: string;
   productName: string;
   price: number;

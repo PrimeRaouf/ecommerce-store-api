@@ -11,7 +11,6 @@ import { ErrorFactory } from '../../../../../core/errors/error.factory';
 import { ReservationStatus } from '../../../domain/value-objects/reservation-status';
 import { InventoryEntity } from '../../orm/inventory.schema';
 
-import { IdGeneratorService } from '../../../../../core/infrastructure/orm/id-generator.service';
 import { ReserveStockDto } from '../../../presentation/dto/reserve-stock.dto';
 
 @Injectable()
@@ -20,18 +19,13 @@ export class PostgresReservationRepository implements ReservationRepository {
     @InjectRepository(ReservationEntity)
     private readonly repository: Repository<ReservationEntity>,
     private readonly dataSource: DataSource,
-    private readonly idGeneratorService: IdGeneratorService,
   ) {}
 
   async save(
     dto: ReserveStockDto,
   ): Promise<Result<Reservation, RepositoryError>> {
     try {
-      const reservationId =
-        await this.idGeneratorService.generateReservationId();
-
       const reservationResult = Reservation.create({
-        id: reservationId,
         orderId: dto.orderId,
         items: dto.items.map((item) => ({
           ...item,
@@ -101,7 +95,9 @@ export class PostgresReservationRepository implements ReservationRepository {
 
   async findById(id: string): Promise<Result<Reservation, RepositoryError>> {
     try {
-      const entity = await this.repository.findOne({ where: { id } });
+      const entity = await this.repository.findOne({
+        where: { id: parseInt(id, 10) },
+      });
       if (!entity) {
         return ErrorFactory.RepositoryError('Reservation not found');
       }
@@ -167,7 +163,7 @@ export class PostgresReservationRepository implements ReservationRepository {
         async (manager) => {
           // Check current status in DB
           const currentEntity = await manager.findOne(ReservationEntity, {
-            where: { id: reservation.id },
+            where: { id: parseInt(reservation.id!, 10) },
             lock: { mode: 'pessimistic_write' },
           });
 
@@ -228,7 +224,7 @@ export class PostgresReservationRepository implements ReservationRepository {
       const savedReservation = await this.dataSource.transaction(
         async (manager) => {
           const currentEntity = await manager.findOne(ReservationEntity, {
-            where: { id: reservation.id },
+            where: { id: parseInt(reservation.id!, 10) },
             lock: { mode: 'pessimistic_write' },
           });
 

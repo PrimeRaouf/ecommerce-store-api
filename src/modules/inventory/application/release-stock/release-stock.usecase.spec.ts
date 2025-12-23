@@ -41,7 +41,7 @@ describe('ReleaseStockUseCase', () => {
       reservationRepository.mockSuccessfulFindById(reservation);
       reservationRepository.mockSuccessfulRelease(reservation);
 
-      const result = await useCase.execute(reservation.id);
+      const result = await useCase.execute(reservation.id!);
 
       expect(result.isSuccess).toBe(true);
       expect(reservationRepository.findById).toHaveBeenCalledWith(
@@ -73,7 +73,7 @@ describe('ReleaseStockUseCase', () => {
       reservationRepository.mockSuccessfulFindById(reservation);
       reservationRepository.mockReleaseFailure(errorMessage);
 
-      const result = await useCase.execute(reservation.id);
+      const result = await useCase.execute(reservation.id!);
 
       expect(result.isFailure).toBe(true);
       if (result.isFailure) {
@@ -104,7 +104,7 @@ describe('ReleaseStockUseCase', () => {
       reservationRepository.mockSuccessfulFindById(reservation);
       reservationRepository.mockSuccessfulRelease(reservation);
 
-      const result = await useCase.execute(reservation.id);
+      const result = await useCase.execute(reservation.id!);
 
       expect(result.isSuccess).toBe(true);
       expect(reservation.status).toBe(ReservationStatus.RELEASED);

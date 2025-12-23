@@ -7,7 +7,7 @@ import { ICart } from '../interfaces/cart.interface';
 import { CartItem, CartItemProps } from './cart-item';
 
 export interface CartProps {
-  id: string;
+  id: string | null;
   customerId: string | null;
   sessionId: string | null;
   items: CartItemProps[];
@@ -16,7 +16,7 @@ export interface CartProps {
 }
 
 export class Cart implements ICart {
-  private readonly _id: string;
+  private readonly _id: string | null;
   private _customerId: string | null;
   private _sessionId: string | null;
   private _items: CartItem[];
@@ -27,7 +27,7 @@ export class Cart implements ICart {
     const validationResult = this.validateProps(props);
     if (validationResult.isFailure) throw validationResult.error;
 
-    this._id = props.id.trim();
+    this._id = props.id ? props.id.trim() : null;
     this._customerId = props.customerId?.trim() || null;
     this._sessionId = props.sessionId?.trim() || null;
     this._items = props.items.map((item) => CartItem.fromPrimitives(item));
@@ -36,9 +36,7 @@ export class Cart implements ICart {
   }
 
   private validateProps(props: CartProps): Result<void, DomainError> {
-    if (!props.id?.trim()) {
-      return ErrorFactory.DomainError('Cart ID is required');
-    }
+    // ID is optional for new carts
     if (!props.customerId && !props.sessionId) {
       return ErrorFactory.DomainError(
         'Either customerId or sessionId must be provided',
@@ -58,7 +56,7 @@ export class Cart implements ICart {
   }
 
   // Getters
-  get id(): string {
+  get id(): string | null {
     return this._id;
   }
 
@@ -293,9 +291,9 @@ export class Cart implements ICart {
     });
   }
 
-  static createGuestCart(id: string, sessionId: string): Cart {
+  static createGuestCart(sessionId: string): Cart {
     return new Cart({
-      id,
+      id: null,
       customerId: null,
       sessionId,
       items: [],
@@ -304,9 +302,9 @@ export class Cart implements ICart {
     });
   }
 
-  static createUserCart(id: string, customerId: string): Cart {
+  static createUserCart(customerId: string): Cart {
     return new Cart({
-      id,
+      id: null,
       customerId,
       sessionId: null,
       items: [],

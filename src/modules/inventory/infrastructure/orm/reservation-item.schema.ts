@@ -9,8 +9,8 @@ import { ReservationEntity } from './reservation.schema';
 
 @Entity({ name: 'reservation_items' })
 export class ReservationItemEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn('increment')
+  id: number;
 
   @Column({ name: 'product_id' })
   productId: string;

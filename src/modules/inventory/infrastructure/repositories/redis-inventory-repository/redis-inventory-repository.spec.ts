@@ -288,9 +288,9 @@ describe('RedisInventoryRepository', () => {
 
       const expectedEntries = [
         { key: productKey(productIds[1]), value: cachedInv2 },
-        { key: idKey(inv2.id), value: cachedInv2 },
+        { key: idKey(inv2.id!), value: cachedInv2 },
         { key: productKey(productIds[2]), value: cachedInv3 },
-        { key: idKey(inv3.id), value: cachedInv3 },
+        { key: idKey(inv3.id!), value: cachedInv3 },
       ];
       expect(cacheService.setAll).toHaveBeenCalledWith(expectedEntries, {
         ttl: INVENTORY_REDIS.EXPIRATION,
@@ -364,7 +364,9 @@ describe('RedisInventoryRepository', () => {
     it('should fetch from postgres, cache results, and return low stock inventories', async () => {
       // Arrange
 
-      const lowStockInv = InventoryTestFactory.createLowStockInventory();
+      const lowStockInv = InventoryTestFactory.createLowStockInventory({
+        id: '1',
+      });
       const domainLowStock = Inventory.fromPrimitives(lowStockInv);
       const cachedLowStock = InventoryCacheMapper.toCache(domainLowStock);
 
@@ -382,8 +384,8 @@ describe('RedisInventoryRepository', () => {
       );
 
       const expectedEntries = [
-        { key: idKey(lowStockInv.id), value: cachedLowStock },
         { key: productKey(lowStockInv.productId), value: cachedLowStock },
+        { key: idKey(lowStockInv.id!), value: cachedLowStock },
       ];
       expect(cacheService.setAll).toHaveBeenCalledWith(expectedEntries, {
         ttl: INVENTORY_REDIS.EXPIRATION,
@@ -444,7 +446,7 @@ describe('RedisInventoryRepository', () => {
       expect(postgresRepo.save).toHaveBeenCalledWith(newDomainInventory);
 
       expect(cacheService.set).toHaveBeenCalledWith(
-        idKey(newInventory.id),
+        idKey(newInventory.id!),
         newCachedInventory,
         { ttl: INVENTORY_REDIS.EXPIRATION },
       );
@@ -493,7 +495,7 @@ describe('RedisInventoryRepository', () => {
       expect(postgresRepo.update).toHaveBeenCalledWith(updatedInventory);
 
       expect(cacheService.set).toHaveBeenCalledWith(
-        idKey(updatedInventory.id),
+        idKey(updatedInventory.id!),
         updatedCachedInventory,
         { ttl: INVENTORY_REDIS.EXPIRATION },
       );

@@ -3,7 +3,7 @@
 import { ICartItem } from './cart-item.interface';
 
 export interface ICart {
-  id: string;
+  id: string | null;
   customerId: string | null;
   sessionId: string | null;
   items: ICartItem[];

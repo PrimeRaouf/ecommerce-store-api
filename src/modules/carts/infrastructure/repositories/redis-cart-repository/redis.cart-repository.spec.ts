@@ -94,7 +94,7 @@ describe('RedisCartRepository', () => {
     it('should return cart from cache', async () => {
       cacheService.get.mockResolvedValue(mockCachedCart);
 
-      const result = await repository.findById(mockCart.id);
+      const result = await repository.findById(mockCart.id!);
 
       ResultAssertionHelper.assertResultSuccess(result);
       if (result.isSuccess) {
@@ -108,7 +108,7 @@ describe('RedisCartRepository', () => {
       postgresRepo.findById.mockResolvedValue(Result.success(mockCart));
       cacheService.set.mockResolvedValue(undefined);
 
-      const result = await repository.findById(mockCart.id);
+      const result = await repository.findById(mockCart.id!);
 
       ResultAssertionHelper.assertResultSuccess(result);
       expect(cacheService.set).toHaveBeenCalled();
@@ -177,7 +177,7 @@ describe('RedisCartRepository', () => {
       postgresRepo.delete.mockResolvedValue(Result.success(undefined));
       cacheService.delete.mockResolvedValue(undefined);
 
-      const result = await repository.delete(mockCart.id);
+      const result = await repository.delete(mockCart.id!);
 
       ResultAssertionHelper.assertResultSuccess(result);
       expect(cacheService.delete).toHaveBeenCalledWith(

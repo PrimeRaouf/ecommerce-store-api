@@ -45,13 +45,15 @@ export class RedisInventoryRepository implements InventoryRepository {
 
       const inventory = dbResult.value;
 
-      await this.cacheService.set(
-        this.idKey(inventory.id),
-        InventoryCacheMapper.toCache(inventory),
-        {
-          ttl: INVENTORY_REDIS.EXPIRATION,
-        },
-      );
+      if (inventory.id) {
+        await this.cacheService.set(
+          this.idKey(inventory.id),
+          InventoryCacheMapper.toCache(inventory),
+          {
+            ttl: INVENTORY_REDIS.EXPIRATION,
+          },
+        );
+      }
 
       await this.cacheService.set(
         this.productKey(inventory.productId),
@@ -94,13 +96,15 @@ export class RedisInventoryRepository implements InventoryRepository {
         },
       );
 
-      await this.cacheService.set(
-        this.idKey(inventory.id),
-        InventoryCacheMapper.toCache(inventory),
-        {
-          ttl: INVENTORY_REDIS.EXPIRATION,
-        },
-      );
+      if (inventory.id) {
+        await this.cacheService.set(
+          this.idKey(inventory.id),
+          InventoryCacheMapper.toCache(inventory),
+          {
+            ttl: INVENTORY_REDIS.EXPIRATION,
+          },
+        );
+      }
 
       return dbResult;
     } catch (error) {
@@ -139,13 +143,21 @@ export class RedisInventoryRepository implements InventoryRepository {
         if (dbResult.isFailure) return dbResult;
 
         const dbInventories = dbResult.value;
-        const entries = dbInventories.flatMap((inv) => [
-          {
-            key: this.productKey(inv.productId),
-            value: InventoryCacheMapper.toCache(inv),
-          },
-          { key: this.idKey(inv.id), value: InventoryCacheMapper.toCache(inv) },
-        ]);
+        const entries = dbInventories.flatMap((inv) => {
+          const items = [
+            {
+              key: this.productKey(inv.productId),
+              value: InventoryCacheMapper.toCache(inv),
+            },
+          ];
+          if (inv.id) {
+            items.push({
+              key: this.idKey(inv.id),
+              value: InventoryCacheMapper.toCache(inv),
+            });
+          }
+          return items;
+        });
 
         if (entries.length > 0) {
           await this.cacheService.setAll(entries, {
@@ -182,13 +194,21 @@ export class RedisInventoryRepository implements InventoryRepository {
       const inventories = dbResult.value;
 
       if (inventories.length > 0) {
-        const entries = inventories.flatMap((inv) => [
-          { key: this.idKey(inv.id), value: InventoryCacheMapper.toCache(inv) },
-          {
-            key: this.productKey(inv.productId),
-            value: InventoryCacheMapper.toCache(inv),
-          },
-        ]);
+        const entries = inventories.flatMap((inv) => {
+          const items = [
+            {
+              key: this.productKey(inv.productId),
+              value: InventoryCacheMapper.toCache(inv),
+            },
+          ];
+          if (inv.id) {
+            items.push({
+              key: this.idKey(inv.id),
+              value: InventoryCacheMapper.toCache(inv),
+            });
+          }
+          return items;
+        });
 
         await this.cacheService.setAll(entries, {
           ttl: INVENTORY_REDIS.EXPIRATION,
@@ -214,13 +234,15 @@ export class RedisInventoryRepository implements InventoryRepository {
 
       const saved = dbResult.value;
 
-      await this.cacheService.set(
-        this.idKey(saved.id),
-        InventoryCacheMapper.toCache(saved),
-        {
-          ttl: INVENTORY_REDIS.EXPIRATION,
-        },
-      );
+      if (saved.id) {
+        await this.cacheService.set(
+          this.idKey(saved.id),
+          InventoryCacheMapper.toCache(saved),
+          {
+            ttl: INVENTORY_REDIS.EXPIRATION,
+          },
+        );
+      }
 
       await this.cacheService.set(
         this.productKey(saved.productId),
@@ -246,13 +268,15 @@ export class RedisInventoryRepository implements InventoryRepository {
 
       const updated = dbResult.value;
 
-      await this.cacheService.set(
-        this.idKey(updated.id),
-        InventoryCacheMapper.toCache(updated),
-        {
-          ttl: INVENTORY_REDIS.EXPIRATION,
-        },
-      );
+      if (updated.id) {
+        await this.cacheService.set(
+          this.idKey(updated.id),
+          InventoryCacheMapper.toCache(updated),
+          {
+            ttl: INVENTORY_REDIS.EXPIRATION,
+          },
+        );
+      }
 
       await this.cacheService.set(
         this.productKey(updated.productId),

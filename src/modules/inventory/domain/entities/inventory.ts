@@ -6,7 +6,7 @@ import { Quantity } from '../../../../shared/domain/value-objects/quantity';
 import { IInventory } from '../interfaces/inventory.interface';
 
 export interface InventoryProps {
-  id: string;
+  id: string | null;
   productId: string;
   availableQuantity: number;
   reservedQuantity: number;
@@ -17,7 +17,7 @@ export interface InventoryProps {
 }
 
 export class Inventory implements IInventory {
-  private readonly _id: string;
+  private readonly _id: string | null;
   private readonly _productId: string;
   private _availableQuantity: Quantity;
   private _reservedQuantity: Quantity;
@@ -30,7 +30,7 @@ export class Inventory implements IInventory {
     const validationResult = this.validateProps(props);
     if (validationResult.isFailure) throw validationResult.error;
 
-    this._id = props.id.trim();
+    this._id = props.id ? props.id.trim() : null;
     this._productId = props.productId.trim();
     this._availableQuantity = Quantity.from(props.availableQuantity);
     this._reservedQuantity = Quantity.from(props.reservedQuantity);
@@ -41,9 +41,7 @@ export class Inventory implements IInventory {
   }
 
   private validateProps(props: InventoryProps): Result<void, DomainError> {
-    if (!props.id?.trim()) {
-      return ErrorFactory.DomainError('Inventory ID is required');
-    }
+    // ID is optional for new inventory
     if (!props.productId?.trim()) {
       return ErrorFactory.DomainError('Product ID is required');
     }
@@ -72,7 +70,7 @@ export class Inventory implements IInventory {
   }
 
   // Getters
-  get id(): string {
+  get id(): string | null {
     return this._id;
   }
 
@@ -281,25 +279,23 @@ export class Inventory implements IInventory {
   }
 
   static create(
-    props: Omit<InventoryProps, 'id' | 'createdAt' | 'updatedAt'> & {
-      id: string;
-    },
+    props: Omit<InventoryProps, 'id' | 'createdAt' | 'updatedAt'>,
   ): Inventory {
     return new Inventory({
       ...props,
+      id: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
   }
 
   static createForProduct(
-    id: string,
     productId: string,
     initialQuantity: number = 0,
     lowStockThreshold: number = 10,
   ): Inventory {
     const props: InventoryProps = {
-      id,
+      id: null,
       productId,
       availableQuantity: initialQuantity,
       reservedQuantity: 0,

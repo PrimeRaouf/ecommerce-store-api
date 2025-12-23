@@ -4,7 +4,7 @@ import { ICart } from '../../domain/interfaces/cart.interface';
 export class CartTestFactory {
   static createMockCart(overrides?: Partial<ICart>): ICart {
     const baseCart: ICart = {
-      id: 'cart-123',
+      id: '123',
       customerId: 'customer-123',
       sessionId: null,
       items: [],
@@ -31,7 +31,7 @@ export class CartTestFactory {
     overrides?: Partial<ICart>,
   ): ICart {
     const items = Array.from({ length: itemCount }, (_, i) => ({
-      id: `item-${i + 1}`,
+      id: `${i + 1}`,
       productId: `product-${i + 1}`,
       productName: `Product ${i + 1}`,
       price: 10 * (i + 1),

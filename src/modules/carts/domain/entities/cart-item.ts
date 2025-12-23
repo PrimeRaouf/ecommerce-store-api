@@ -4,7 +4,6 @@ import { DomainError } from '../../../../core/errors/domain.error';
 import { ErrorFactory } from '../../../../core/errors/error.factory';
 import { Quantity } from '../../../../shared/domain/value-objects/quantity';
 import { ICartItem } from '../interfaces/cart-item.interface';
-import { v4 as uuidv4 } from 'uuid';
 
 export interface CartItemProps {
   id: string | null;
@@ -16,7 +15,7 @@ export interface CartItemProps {
 }
 
 export class CartItem implements ICartItem {
-  private _id: string;
+  private _id: string | null;
   private readonly _productId: string;
   private _productName: string;
   private _price: number;
@@ -27,7 +26,7 @@ export class CartItem implements ICartItem {
     const validationResult = this.validateProps(props);
     if (validationResult.isFailure) throw validationResult.error;
 
-    this._id = props.id || this.generateId();
+    this._id = props.id || null;
     this._productId = props.productId.trim();
     this._productName = props.productName.trim();
     this._price = this.roundPrice(props.price);
@@ -52,10 +51,6 @@ export class CartItem implements ICartItem {
     return Result.success(undefined);
   }
 
-  private generateId(): string {
-    return uuidv4();
-  }
-
   private roundPrice(price: number): number {
     return Math.round(price * 100) / 100;
   }
@@ -72,7 +67,7 @@ export class CartItem implements ICartItem {
   }
 
   // Getters
-  get id(): string {
+  get id(): string | null {
     return this._id;
   }
 

@@ -4,7 +4,7 @@ import { DataSource, Repository } from 'typeorm';
 import { InventoryRepository } from '../../../domain/repositories/inventory.repository';
 import { Inventory } from '../../../domain/entities/inventory';
 import { InventoryEntity } from '../../orm/inventory.schema';
-import { IdGeneratorService } from '../../../../../core/infrastructure/orm/id-generator.service';
+
 import { Result } from '../../../../../core/domain/result';
 import { RepositoryError } from '../../../../../core/errors/repository.error';
 import { ErrorFactory } from '../../../../../core/errors/error.factory';
@@ -17,13 +17,12 @@ export class PostgresInventoryRepository implements InventoryRepository {
     @InjectRepository(InventoryEntity)
     private readonly ormRepo: Repository<InventoryEntity>,
     private readonly dataSource: DataSource,
-    private readonly idGeneratorService: IdGeneratorService,
   ) {}
 
   async findById(id: string): Promise<Result<Inventory, RepositoryError>> {
     try {
       const entity = await this.ormRepo.findOne({
-        where: { id },
+        where: { id: parseInt(id, 10) },
       });
 
       if (!entity) {
@@ -128,11 +127,7 @@ export class PostgresInventoryRepository implements InventoryRepository {
             );
           }
 
-          const inventoryId =
-            await this.idGeneratorService.generateInventoryId();
-
           const entity = InventoryMapper.toEntity(inventory);
-          entity.id = inventoryId;
           return await manager.save(InventoryEntity, entity);
         },
       );
@@ -153,7 +148,7 @@ export class PostgresInventoryRepository implements InventoryRepository {
       const updatedInventory = await this.dataSource.transaction(
         async (manager) => {
           const existingEntity = await manager.findOne(InventoryEntity, {
-            where: { id: inventory.id },
+            where: { id: parseInt(inventory.id!, 10) },
           });
 
           if (!existingEntity) {
@@ -201,7 +196,7 @@ export class PostgresInventoryRepository implements InventoryRepository {
 
   async delete(id: string): Promise<Result<void, RepositoryError>> {
     try {
-      const deleteResult = await this.ormRepo.delete({ id });
+      const deleteResult = await this.ormRepo.delete({ id: parseInt(id, 10) });
 
       if (deleteResult.affected === 0) {
         return ErrorFactory.RepositoryError('Inventory not found');
