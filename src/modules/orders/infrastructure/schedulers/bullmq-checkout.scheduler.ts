@@ -257,4 +257,29 @@ export class BullMqOrderScheduler implements OrderScheduler {
       );
     }
   }
+
+  async scheduleOrderStockRelease(
+    orderId: number,
+  ): Promise<Result<string, InfrastructureError>> {
+    try {
+      const jobId = this.jobConfig.generateJobId(JobNames.RELEASE_ORDER_STOCK);
+
+      await this.flowProducerService.add({
+        name: JobNames.RELEASE_ORDER_STOCK,
+        queueName: 'checkout',
+        data: { orderId },
+        opts: {
+          jobId,
+          ...this.jobConfig.getJobOptions(JobNames.RELEASE_ORDER_STOCK),
+        },
+      });
+
+      return Result.success(jobId);
+    } catch (error) {
+      return ErrorFactory.InfrastructureError(
+        'Failed to schedule order stock release',
+        error,
+      );
+    }
+  }
 }

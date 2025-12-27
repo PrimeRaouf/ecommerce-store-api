@@ -7,14 +7,26 @@ import { RepositoryError } from '../../../../../core/errors/repository.error';
 import { UseCaseError } from '../../../../../core/errors/usecase.error';
 import { ResultAssertionHelper } from '../../../../../testing';
 import { DomainError } from '../../../../../core/errors/domain.error';
+import { OrderScheduler } from '../../../domain/schedulers/order.scheduler';
+import { Result } from '../../../../../core/domain/result';
 
 describe('CancelOrderUseCase', () => {
   let useCase: CancelOrderUseCase;
   let mockRepository: MockOrderRepository;
+  let mockOrderScheduler: jest.Mocked<OrderScheduler>;
 
   beforeEach(() => {
     mockRepository = new MockOrderRepository();
-    useCase = new CancelOrderUseCase(mockRepository);
+    mockOrderScheduler = {
+      scheduleOrderStockRelease: jest
+        .fn()
+        .mockResolvedValue(Result.success('job-id')),
+      scheduleCheckout: jest.fn(),
+      schedulePostPayment: jest.fn(),
+      scheduleStockRelease: jest.fn(),
+      schedulePostConfirmation: jest.fn(),
+    } as unknown as jest.Mocked<OrderScheduler>;
+    useCase = new CancelOrderUseCase(mockRepository, mockOrderScheduler);
   });
 
   afterEach(() => {
@@ -34,6 +46,9 @@ describe('CancelOrderUseCase', () => {
 
     expect(mockRepository.findById).toHaveBeenCalledWith(orderId);
     expect(mockRepository.cancelOrder).toHaveBeenCalled();
+    expect(mockOrderScheduler.scheduleOrderStockRelease).toHaveBeenCalledWith(
+      orderId,
+    );
     ResultAssertionHelper.assertResultSuccess(result);
     if (result.isSuccess) {
       expect(result.value.status).toBe(OrderStatus.CANCELLED);
@@ -53,6 +68,7 @@ describe('CancelOrderUseCase', () => {
     );
 
     expect(mockRepository.cancelOrder).not.toHaveBeenCalled();
+    expect(mockOrderScheduler.scheduleOrderStockRelease).not.toHaveBeenCalled();
   });
 
   it('should return a failure result if the Order cannot be cancelled in current state', async () => {
@@ -72,6 +88,7 @@ describe('CancelOrderUseCase', () => {
     );
 
     expect(mockRepository.cancelOrder).not.toHaveBeenCalled();
+    expect(mockOrderScheduler.scheduleOrderStockRelease).not.toHaveBeenCalled();
   });
 
   it('should return a failure result if the repository fails to save the cancellation', async () => {
@@ -90,6 +107,7 @@ describe('CancelOrderUseCase', () => {
       'DB write failed',
       RepositoryError,
     );
+    expect(mockOrderScheduler.scheduleOrderStockRelease).not.toHaveBeenCalled();
   });
 
   it('should return a failure result on an unexpected error', async () => {

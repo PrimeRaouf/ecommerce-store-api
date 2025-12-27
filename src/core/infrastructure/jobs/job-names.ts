@@ -11,6 +11,7 @@ export const JobNames = {
   FINALIZE_CHECKOUT: 'finalize-checkout', // Parent job at end of flow
   // Compensations
   RELEASE_STOCK: 'release-stock',
+  RELEASE_ORDER_STOCK: 'release-order-stock',
   CANCEL_ORDER: 'cancel-order',
   REFUND_PAYMENT: 'refund-payment',
 
