@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ReserveStockStep } from '../reserve-stock.job';
+import { ReserveStockStep } from './reserve-stock.job';
 import { ReserveStockUseCase } from '../../../../inventory/application/reserve-stock/reserve-stock.usecase';
 
 describe('ReserveStockStep', () => {
