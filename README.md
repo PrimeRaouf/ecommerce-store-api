@@ -265,17 +265,22 @@ npm run d:up:test
 
 ```
 src/
-├── modules/                 # Feature modules
-│   ├── product/            # Product domain module
-│   │   ├── application/    # Use cases & DTOs
-│   │   ├── domain/         # Entities & domain logic
-│   │   ├── infrastructure/ # Repositories & external services
-│   │   └── presentation/   # Controllers & validation
-│   └── order/              # Order domain module
-├── shared/                 # Shared utilities & types
-├── config/                 # Configuration modules
-└── main.ts                 # Application bootstrap
-
+├── core/                    # Shared kernel & cross-cutting concerns
+│   ├── domain/              # Base entities, value objects, & Result pattern
+│   ├── application/         # Common application services & interfaces
+│   └── infrastructure/      # Shared persistence, decorators, & interceptors
+├── modules/                 # Feature-based modules (Bounded Contexts)
+│   ├── [module]/            # e.g., orders, products, inventory
+│   │   ├── domain/          # Entities, Value Objects, & Repository interfaces
+│   │   ├── application/     # Use Cases & Application services
+│   │   ├── infrastructure/  # Repository implementations & external clients
+│   │   ├── presentation/    # Controllers, DTOs, Listeners, & Jobs
+│   │   ├── testing/         # Module-specific factories, mocks, & builders
+│   │   └── [module].module.ts
+├── config/                  # Global configuration & environment validation
+├── shared/                  # Generic utilities & helper functions
+├── testing/                 # Root-level testing utilities & E2E setup
+└── main.ts                  # Application bootstrap
 ```
 
 ### Design Principles
@@ -513,9 +518,7 @@ This project is continuously evolving. Here are the planned features and improve
 
 ## 📄 License
 
-**All rights reserved © 2025 PrimeRaouf.**
-
-This repository is private. Do not copy, distribute, or use this code without explicit permission.
+Released under the [MIT License](LICENSE). Feel free to use, modify, and distribute this code for personal or commercial projects.
 
 ---
 
