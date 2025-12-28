@@ -7,19 +7,12 @@ import { InfrastructureError } from '../../../../core/errors/infrastructure-erro
 export interface IPaymentGateway {
   getMethod(): PaymentMethodType;
 
-  /**
-   * Create a payment intent for client-side confirmation (Stripe/PayPal flow).
-   * Returns paymentIntentId and clientSecret for frontend.
-   */
   createPaymentIntent(
     amount: number,
     currency: string,
     metadata?: Record<string, string>,
   ): Promise<Result<PaymentIntentResult, InfrastructureError>>;
 
-  /**
-   * Authorize a payment (legacy flow or after intent confirmation).
-   */
   authorize(
     amount: number,
     currency: string,
