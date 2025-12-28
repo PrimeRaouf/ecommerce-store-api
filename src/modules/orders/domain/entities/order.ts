@@ -136,6 +136,10 @@ export class Order implements IOrder {
     return this._pricing.totalPrice;
   }
 
+  get currency(): string {
+    return this._pricing.getTotalPriceMoney().currency;
+  }
+
   get createdAt(): Date {
     return new Date(this._createdAt);
   }
@@ -482,6 +486,7 @@ export class Order implements IOrder {
       subtotal: this.subtotal,
       shippingCost: this.shippingCost,
       totalPrice: this.totalPrice,
+      currency: this._pricing.getTotalPriceMoney().currency,
       status: this._status.value,
       createdAt: this._createdAt,
       updatedAt: this._updatedAt,

@@ -19,6 +19,7 @@ export interface IOrder {
   subtotal: number;
   shippingCost: number;
   totalPrice: number;
+  currency: string;
   status: OrderStatus;
   createdAt: Date;
   updatedAt: Date;
