@@ -18,7 +18,6 @@ export class OrderEntityTestFactory {
       id: 1,
       customerId: 1,
       paymentId: null,
-      reservationId: null,
       paymentMethod: PaymentMethodType.CREDIT_CARD,
       shippingAddressId: 1,
 
