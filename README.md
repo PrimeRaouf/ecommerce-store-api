@@ -21,9 +21,26 @@
 - [🛠️ Troubleshooting](#troubleshooting)
 - [� Roadmap](#-roadmap)
 - [�📊 Project Statistics](#-project-statistics)
+- [👋 Contributing](CONTRIBUTING.md)
+- [🏗️ System Architecture](docs/ARCHITECTURE.md)
 - [📄 License](#-license)
 - [🤝 Acknowledgments](#-acknowledgments)
 - [📞 Support](#-support)
+
+---
+
+## 🌟 Why This Project? (A Learning Journey)
+
+> "The main goal when I started building this API was to learn new stuff that I did not know before... I reinforced my knowledge on DDD, I learned how to effectively create a scalable system, separate concerns, separate business logic from technical logic..."
+
+I spent 5 months building this project not just as another e-commerce demo, but as a deep dive into **Enterprise Node.js Architecture**. My goal was to bridge the gap between "tutorial code" and "production systems" by implementing the hard parts that most courses skip:
+
+- **Distributed Systems**: Handling eventual consistency with SAGA pattern & RabbitMQ/BullMQ.
+- **Fail-Safe Mechanisms**: Designing compensation flows when things go wrong (e.g., payment succeeds but inventory fails).
+- **Strict DDD**: Enforcing boundaries between Domain, Application, and Infrastructure layers.
+- **Testing Culture**: Writing 50+ test suites because in the real world, tests are not optional.
+
+I built this to prove (to myself and future employers) that I can handle complex, scalable backend systems. I hope it serves as a valuable reference for others on the same journey!
 
 ---
 
@@ -35,6 +52,19 @@
 - **Clean Architecture** principles ensuring the core logic is independent of frameworks and external tools
 - **Result Pattern** for consistent, type-safe error handling across the entire application
 - **Hexagonal Architecture (Ports & Adapters)** for easy swapping of infrastructure components (e.g., switching between Postgres and Redis repositories)
+
+### Architecture at a Glance
+
+```mermaid
+graph TD
+    Client --> API[NestJS API]
+    API --> Postgres
+    API --> Redis[Redis Stack]
+    API --> BullMQ
+    BullMQ --> Workers
+```
+
+See the full [**System Architecture & Diagrams**](docs/ARCHITECTURE.md) for detailed Sequence and Class diagrams.
 
 ### 🛠️ **Technology Stack**
 
@@ -82,6 +112,14 @@ This project goes beyond a simple CRUD API by implementing complex distributed s
 
 - **RedisJSON**: Stores complex product and cart data as JSON documents, reducing the need for expensive SQL joins for frequently accessed data.
 - **RedisSearch**: Provides full-text search and advanced filtering on product data directly from Redis, significantly improving performance compared to traditional SQL `LIKE` queries.
+
+### 💳 **Hybrid Payment Orchestration (COD + Online)**
+
+- **Problem**: Real-world e-commerce systems need to handle both immediate payments (Credit Card) and deferred confirmations (Cash on Delivery) without duplicating business logic.
+- **Solution**: Designed a unified **Strategy Pattern** for checkout flows.
+  - **Online**: Full SAGA (Validate -> Reserve -> Pay -> Confirm).
+  - **COD**: Async Pause (Validate -> Reserve -> **Stop & Wait** -> Manual Confirm).
+  - Checks shared stock availability logic while respecting different lifecycle requirements.
 
 ---
 
