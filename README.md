@@ -1,10 +1,11 @@
 # 🛒 E-commerce MVP API
 
-<p align="center"> <a href="https://github.com/PrimeRaouf/ecommerce-store-api/actions"><img src="https://github.com/PrimeRaouf/ecommerce-store-api/actions/workflows/CI.yml/badge.svg" alt="CI"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white" alt="TypeScript"></a> <a href="https://nestjs.com/"><img src="https://img.shields.io/badge/NestJS-E0234E?style=flat&logo=nestjs&logoColor=white" alt="NestJS"></a> <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white" alt="PostgreSQL"></a> <a href="https://redis.io/"><img src="https://img.shields.io/badge/Redis-DC382D?style=flat&logo=redis&logoColor=white" alt="Redis"></a> <a href="https://bullmq.io/"><img src="https://img.shields.io/badge/BullMQ-FF4B4B?style=flat&logo=bull&logoColor=white" alt="BullMQ"></a> <a href="https://jestjs.io/"><img src="https://img.shields.io/badge/Jest-C21325?style=flat&logo=jest&logoColor=white" alt="Jest"></a> <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white" alt="Docker"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"></a> <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-22%2B-green?style=flat&logo=node.js" alt="Node.js Version"></a> <img src="https://img.shields.io/badge/Coverage-High-brightgreen.svg" alt="Coverage"> </p>
+<p align="center"> <a href="https://github.com/raouf-b-dev/ecommerce-store-api/actions"><img src="https://github.com/raouf-b-dev/ecommerce-store-api/actions/workflows/ci.yml/badge.svg" alt="CI"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white" alt="TypeScript"></a> <a href="https://nestjs.com/"><img src="https://img.shields.io/badge/NestJS-E0234E?style=flat&logo=nestjs&logoColor=white" alt="NestJS"></a> <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white" alt="PostgreSQL"></a> <a href="https://redis.io/"><img src="https://img.shields.io/badge/Redis-DC382D?style=flat&logo=redis&logoColor=white" alt="Redis"></a> <a href="https://bullmq.io/"><img src="https://img.shields.io/badge/BullMQ-FF4B4B?style=flat&logo=bull&logoColor=white" alt="BullMQ"></a> <a href="https://jestjs.io/"><img src="https://img.shields.io/badge/Jest-C21325?style=flat&logo=jest&logoColor=white" alt="Jest"></a> <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white" alt="Docker"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"></a> <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-22%2B-green?style=flat&logo=node.js" alt="Node.js Version"></a> <img src="https://img.shields.io/badge/Coverage-High-brightgreen.svg" alt="Coverage"> </p>
 
 > An enterprise-level NestJS MVP API for an e-commerce store built with **Domain-Driven Design**, **Clean Architecture**, and modern best practices.
 
 ## 📋 Table of Contents
+
 - [🌟 Key Features](#-key-features)
 - [🚀 Advanced Engineering Features](#-advanced-engineering-features)
 - [🎯 Recruiter's Guide](#-recruiters-guide)
@@ -32,7 +33,7 @@
 
 > "The main goal when I started building this API was to learn new stuff that I did not know before... I reinforced my knowledge on DDD, I learned how to effectively create a scalable system, separate concerns, separate business logic from technical logic..."
 
-I spent 5 months building this project not just as another e-commerce demo, but as a deep dive into **Enterprise Node.js Architecture**. My goal was to bridge the gap between "tutorial code" and "production systems" by implementing the hard parts that most courses skip:
+I built this project not just as another e-commerce demo, but as a deep dive into **Enterprise Node.js Architecture**. My goal was to bridge the gap between "tutorial code" and "production systems" by implementing the hard parts that most courses skip:
 
 - **Distributed Systems**: Handling eventual consistency with SAGA pattern & RabbitMQ/BullMQ.
 - **Fail-Safe Mechanisms**: Designing compensation flows when things go wrong (e.g., payment succeeds but inventory fails).
@@ -56,19 +57,40 @@ I built this to prove (to myself and future employers) that I can handle complex
 
 ```mermaid
 graph TD
-    Client[Client App] --> API[NestJS API Gateway]
+    Client["📱 Client App (Web/Mobile)"] -->|HTTP/REST| API["🛡️ NestJS API Gateway"]
+    Client -->|WebSocket| WS["🔌 WebSocket Gateway"]
+
+    subgraph "Application Core (Modular Monolith)"
+        API --> Auth["🔐 Auth Module"]
+        API --> Orders["📦 Orders Module"]
+        API --> Products["🏷️ Products Module"]
+        API --> Carts["🛒 Carts Module"]
+        API --> Payments["💳 Payments Module"]
+        API --> Inventory["🏭 Inventory Module"]
+        API --> Customers["👥 Customers Module"]
+
+        WS --> Notifications["🔔 Notifications Module"]
+
+        Orders -->|SAGA Orchestration| Inventory
+        Orders -->|SAGA Orchestration| Payments
+        Orders -->|Event| Notifications
+    end
 
     subgraph "Infrastructure Layer"
-        API --> PG[(PostgreSQL)]
-        API --> Redis[(Redis Stack)]
-        API --> BullMQ[BullMQ Job Queue]
+        Auth -->|Persist| PG["🐘 PostgreSQL"]
+        Orders -->|Persist| PG
+        Products -->|Persist| PG
+
+        Carts -->|Cache/Persist| Redis["⚡ Redis Stack"]
+        Products -->|Search| Redis
+
+        Orders -->|Async Jobs| BullMQ["🐂 BullMQ Job Queue"]
+        Notifications -->|Async Jobs| BullMQ
     end
 
     subgraph "External Services"
-        Payment[Payment Gateway Mock]
+        Payments <-->|Verify| Stripe["💳 Payment Gateway"]
     end
-
-    API <--> Payment
 ```
 
 > **Key Strength**: Fully supports **[Hybrid Payment Orchestration](#-hybrid-payment-orchestration-cod--online)** (Online + Cash-on-Delivery), handling complex state transitions for both synchronous and asynchronous flows.
@@ -160,7 +182,7 @@ Ensure you have the following installed:
 1.  **Clone the repository**
 
     ```bash
-    git clone https://github.com/PrimeRaouf/ecommerce-store-api.git
+    git clone https://github.com/raouf-b-dev/ecommerce-store-api.git
     cd ecommerce-store-api
 
     ```
@@ -398,63 +420,23 @@ src/
 
 ### Core Resources
 
-Method
-
-Endpoint
-
-Description
-
-`GET`
-
-`/api/products`
-
-List products with filtering
-
-`POST`
-
-`/api/products`
-
-Create new product
-
-`GET`
-
-`/api/products/:id`
-
-Get product details
-
-`PUT`
-
-`/api/products/:id`
-
-Update product
-
-`DELETE`
-
-`/api/products/:id`
-
-Delete product
-
-`GET`
-
-`/api/orders`
-
-List user orders
-
-`POST`
-
-`/api/orders`
-
-Create new order
-
-`GET`
-
-`/api/orders/:id`
-
-Get order details
+| Module            | Method | Endpoint               | Description                             |
+| :---------------- | :----- | :--------------------- | :-------------------------------------- |
+| **Auth**          | `POST` | `/api/auth/register`   | Register a new user                     |
+|                   | `POST` | `/api/auth/login`      | Authenticate and get JWT                |
+| **Products**      | `GET`  | `/api/products`        | List products with filtering/pagination |
+|                   | `GET`  | `/api/products/:id`    | Get detailed product information        |
+| **Cart**          | `POST` | `/api/carts`           | Create or retrieve active cart          |
+|                   | `POST` | `/api/carts/items`     | Add item to cart with stock check       |
+| **Orders**        | `POST` | `/api/orders/checkout` | Process checkout (SAGA Pattern)         |
+|                   | `GET`  | `/api/orders`          | List user order history                 |
+| **Notifications** | `GET`  | `/api/notifications`   | Get real-time user notifications        |
 
 ### Documentation
 
-Full API documentation with request/response schemas available at: **`http://localhost:3000/api`** when running locally.
+The full API specification, including request/response schemas and authentication requirements, is available via Swagger UI:
+
+👉 **`http://localhost:3000/api/docs`** (when running locally)
 
 ---
 
@@ -539,7 +521,7 @@ This project is continuously evolving. Here are the planned features and improve
 
 - [ ] **Real Payment Integration**: Support for Stripe, PayPal, and other gateways.
 - [ ] **Advanced Analytics**: Reporting dashboard for sales, inventory, and customer behavior.
-- [ ] **Real-time Notifications**: WebSockets/SSE for order status updates and stock alerts.
+- [x] **Real-time Notifications**: WebSockets/SSE for order status updates and stock alerts.
 
 ### 🔹 Engineering & DevOps
 
@@ -582,11 +564,11 @@ Released under the [MIT License](LICENSE). Feel free to use, modify, and distrib
 
 For questions, issues, or contributions:
 
-- **GitHub Issues**: [Report bugs or request features](https://github.com/PrimeRaouf/ecommerce-store-api/issues)
-- **GitHub Repository**: [https://github.com/PrimeRaouf/ecommerce-store-api](https://github.com/PrimeRaouf/ecommerce-store-api)
+- **GitHub Issues**: [Report bugs or request features](https://github.com/raouf-b-dev/ecommerce-store-api/issues)
+- **GitHub Repository**: [https://github.com/raouf-b-dev/ecommerce-store-api](https://github.com/raouf-b-dev/ecommerce-store-api)
 
 ---
 
-**Built with ❤️ by [PrimeRaouf](https://github.com/PrimeRaouf)**
+**Built with ❤️ by [Abderaouf .B](https://github.com/raouf-b-dev)**
 
 _Crafting enterprise-level APIs with clean architecture and modern best practices_
