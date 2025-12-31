@@ -8,19 +8,40 @@ The system is built as a modular monolith using **NestJS**, designed for scalabi
 
 ```mermaid
 graph TD
-    Client[Client App] --> API[NestJS API Gateway]
+    Client["📱 Client App (Web/Mobile)"] -->|HTTP/REST| API["🛡️ NestJS API Gateway"]
+    Client -->|WebSocket| WS["🔌 WebSocket Gateway"]
+
+    subgraph "Application Core (Modular Monolith)"
+        API --> Auth["🔐 Auth Module"]
+        API --> Orders["📦 Orders Module"]
+        API --> Products["🏷️ Products Module"]
+        API --> Carts["🛒 Carts Module"]
+        API --> Payments["💳 Payments Module"]
+        API --> Inventory["🏭 Inventory Module"]
+        API --> Customers["👥 Customers Module"]
+
+        WS --> Notifications["🔔 Notifications Module"]
+
+        Orders -->|SAGA Orchestration| Inventory
+        Orders -->|SAGA Orchestration| Payments
+        Orders -->|Event| Notifications
+    end
 
     subgraph "Infrastructure Layer"
-        API --> PG[(PostgreSQL)]
-        API --> Redis[(Redis Stack)]
-        API --> BullMQ[BullMQ Job Queue]
+        Auth -->|Persist| PG["🐘 PostgreSQL"]
+        Orders -->|Persist| PG
+        Products -->|Persist| PG
+
+        Carts -->|Cache/Persist| Redis["⚡ Redis Stack"]
+        Products -->|Search| Redis
+
+        Orders -->|Async Jobs| BullMQ["🐂 BullMQ Job Queue"]
+        Notifications -->|Async Jobs| BullMQ
     end
 
     subgraph "External Services"
-        Payment[Payment Gateway Mock]
+        Payments <-->|Verify| Stripe["💳 Payment Gateway"]
     end
-
-    API <--> Payment
 ```
 
 > **Key Strength**: This system implements a **Hybrid Payment Architecture**, orchestrating both synchronous online payments (Stripe/PayPal imitation) and asynchronous manual confirmations (Cash on Delivery) via unified SAGA flows.
@@ -252,4 +273,87 @@ flowchart TD
     Lock --> Controller[Execute Controller Logic]
     Controller --> Store[Store Result in Redis]
     Store --> Response[Return Response]
+```
+
+## 🔔 Notification System Architecture
+
+The notification system is designed for **reliability** and **real-time delivery**, ensuring no notifications are lost even if the user is offline. It uses a **Nested BullMQ Flow** to guarantee the order of operations: `Save -> Send -> Update`.
+
+### Module Structure (Layered Architecture)
+
+The module follows strict DDD layering, separating business rules from technical implementation.
+
+```mermaid
+graph TD
+    subgraph "Presentation Layer"
+        NC[NotificationsController]
+        NP[NotificationsProcessor]
+    end
+
+    subgraph "Application Layer"
+        DNS[DeliverNotificationService]
+        GUC[GetNotificationsUseCase]
+        MUC[MarkAsReadUseCase]
+    end
+
+    subgraph "Domain Layer"
+        NE[Notification Entity]
+        RI[NotificationRepository Interface]
+        SI[NotificationScheduler Interface]
+    end
+
+    subgraph "Infrastructure Layer"
+        PR[PostgresNotificationRepository]
+        BS[BullMqNotificationScheduler]
+        WG[WebsocketGateway]
+    end
+
+    %% Interactions
+    NC --> GUC
+    NC --> MUC
+    NP --> DNS
+
+    GUC --> RI
+    MUC --> RI
+
+    DNS --> WG
+    DNS --> NE
+
+    BS -- implements --> SI
+    PR -- implements --> RI
+
+    BS --> NE
+```
+
+### Reliable Delivery Flow (BullMQ Nested Flow)
+
+To prevent "lost notifications" (where a notification is sent but not saved, or vice versa), we use a strictly ordered job flow.
+
+```mermaid
+sequenceDiagram
+    participant System as Trigger (e.g., OrderService)
+    participant Scheduler as NotificationScheduler
+    participant Queue as BullMQ Flow
+    participant Worker as NotificationProcessor
+    participant DB as PostgreSQL
+    participant WS as WebSocketGateway
+    participant Client
+
+    System->>Scheduler: Schedule Notification
+    Scheduler->>Queue: Add Flow (Save -> Send -> Update)
+
+    Note over Queue, Worker: Step 1: Persistence (Critical)
+    Queue->>Worker: Job: SAVE_NOTIFICATION_HISTORY
+    Worker->>DB: INSERT Notification (Status: PENDING)
+    DB-->>Worker: Success
+
+    Note over Queue, Worker: Step 2: Delivery
+    Queue->>Worker: Job: SEND_NOTIFICATION
+    Worker->>WS: Send to User Room
+    WS-->>Client: Emit 'notification' Event
+    Worker-->>Queue: Success
+
+    Note over Queue, Worker: Step 3: Status Update
+    Queue->>Worker: Job: UPDATE_NOTIFICATION_STATUS
+    Worker->>DB: UPDATE Status (SENT)
 ```
