@@ -49,6 +49,8 @@ I built this to prove (to myself and future employers) that I can handle complex
 ### 🏗️ **Architecture & Design**
 
 - **Domain-Driven Design (DDD)** with clear layer separation (Domain, Application, Infrastructure, Presentation)
+- **Strategic DDD** with explicit Subdomains (Core, Generic, Supporting) and Bounded Contexts
+- **Anti-Corruption Layer (ACL)** using Ports & Adapters to decouple modules
 - **Clean Architecture** principles ensuring the core logic is independent of frameworks and external tools
 - **Result Pattern** for consistent, type-safe error handling across the entire application
 - **Hexagonal Architecture (Ports & Adapters)** for easy swapping of infrastructure components (e.g., switching between Postgres and Redis repositories)
