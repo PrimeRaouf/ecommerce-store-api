@@ -49,6 +49,8 @@ I built this to prove (to myself and future employers) that I can handle complex
 ### 🏗️ **Architecture & Design**
 
 - **Domain-Driven Design (DDD)** with clear layer separation (Domain, Application, Infrastructure, Presentation)
+- **Strategic DDD** with explicit Subdomains (Core, Generic, Supporting) and Bounded Contexts
+- **Anti-Corruption Layer (ACL)** using Ports & Adapters to decouple modules
 - **Clean Architecture** principles ensuring the core logic is independent of frameworks and external tools
 - **Result Pattern** for consistent, type-safe error handling across the entire application
 - **Hexagonal Architecture (Ports & Adapters)** for easy swapping of infrastructure components (e.g., switching between Postgres and Redis repositories)
@@ -115,10 +117,14 @@ See the full [**System Architecture & Diagrams**](ARCHITECTURE.md) for detailed 
 
 ### 📦 **Core Modules**
 
-- **Product Management** - Complete CRUD with advanced filtering
-- **Order Processing** - Order lifecycle management
-- **Authentication** - JWT-based security
-- **Validation** - Request/response validation with class-validator
+- **Order Processing** - Complex order lifecycle with SAGA orchestration and compensation logic
+- **Product Catalog** - Advanced product management with RedisSearch indexing and filtering
+- **Shopping Carts** - High-performance cart management with RedisJSON persistence
+- **Inventory Management** - Real-time stock tracking and reservation system
+- **Customer Profiles** - Management of user data, shipping addresses, and preferences
+- **Payment Orchestration** - Strategy-based handling of Online and COD payment flows
+- **Authentication** - Secure JWT-based identity and access management
+- **Notifications** - Real-time WebSocket and background alert delivery system
 
 ---
 
